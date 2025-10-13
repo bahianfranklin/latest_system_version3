@@ -1,0 +1,95 @@
+<?php
+    // Start session only if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Ensure output buffering is active so headers/redirects won't fail after HTML output
+    if (!ob_get_level()) {
+        ob_start();
+    }
+
+    // Load DB using a reliable path relative to this layout file
+    require_once __DIR__ . '/../db.php';
+
+    if (!isset($_SESSION['user'])) {
+        header("Location: LOGIN.php");
+        exit();
+    }
+
+    $user = $_SESSION['user'];
+    $user_id = $_SESSION['user_id'] ?? 1;
+
+    // ✅ Approver check - define only if not already defined elsewhere
+    if (!function_exists('isApprover')) {
+        function isApprover($conn, $user_id) {
+            $sql = "SELECT 1 FROM approver_assignments WHERE user_id = ? LIMIT 1";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+            $stmt->store_result();
+            return $stmt->num_rows > 0;
+        }
+    }
+    $approver = isApprover($conn, $user_id);
+?>
+<!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+            <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) : 'NEW SAMPLE SYSTEM' ?></title>
+            <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
+            <link href="css/styles.css" rel="stylesheet" />
+            <?= $extraHead ?? '' ?>
+            <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+            <!-- HEADER LOADED -->
+        </head>
+    <body class="sb-nav-fixed">
+        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+            <!-- Navbar Brand-->
+            <a class="navbar-brand ps-3" href="INDEX.php">NEW SYSTEM LOGO</a>
+            <!-- Sidebar Toggle-->
+            <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
+            <!-- Navbar-->
+             <form class="d-none d-md-inline-block form-inline ms-auto me-0 me-md-3 my-2 my-md-0"></form>
+                <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user fa-fw"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+
+                        <!-- User Profile Section -->
+                        <li class="px-2 py-2 text-center">
+                            <?php 
+                                $profilePath = "uploads/" . ($user['profile_pic'] ?? '');
+                                if (!empty($user['profile_pic']) && file_exists($profilePath)): ?>
+                                    <img src="<?= $profilePath ?>?t=<?= time(); ?>" 
+                                        alt="Profile Picture" 
+                                        class="img-thumbnail rounded-circle mb-2" 
+                                        style="width:80px; height: 80px; object-fit:cover;">
+                                <?php else: ?>
+                                    <img src="uploads/default.png" 
+                                        class="rounded-circle border border-2 mb-2" 
+                                        style="width:80px; height:80px; object-fit:cover;">
+                                <?php endif; ?>
+                            <p class="fw-bold mb-1" style="font-size: 14px;"><strong><?= htmlspecialchars($user['name'] ?? 'N/A'); ?></strong></p>
+                            <p class="text-muted mb-1" style="font-size: 12px">Username: <?= htmlspecialchars($user['username'] ?? 'N/A'); ?></p>
+                            <p class="text-muted mb-1" style="font-size: 12px">Role: <?= htmlspecialchars($user['role'] ?? 'N/A'); ?></p>
+                            <p class="text-muted mb-0" style="font-size: 12px;">Status: <?= htmlspecialchars($user['status'] ?? 'N/A'); ?></p>
+                        </li>
+
+                        <li><hr class="dropdown-divider" /></li>
+                        <li><a class="dropdown-item" href="EDIT_USER_PROFILE.php?id=<?= $user['id'] ?>">Edit Profile</a></li>
+                        <li><a class="dropdown-item" href="#!">Settings</a></li>
+                        <li><a class="dropdown-item" href="LOCK.PHP">Lock Screen</a></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li><a class="dropdown-item" href="LOGOUT.php">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+

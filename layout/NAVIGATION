@@ -1,0 +1,158 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+ob_start(); // Add this here to buffer any accidental early output
+
+// ✅ Get current page
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// ✅ Define collapsible groups
+$app_pages = [
+    'LEAVE_APPLICATION.PHP', 'OVERTIME.PHP', 'OFFICIAL_BUSINESS.PHP',
+    'CHANGE_SCHEDULE.PHP', 'FAILURE_CLOCK.PHP', 'CLOCK_ALTERATION.PHP',
+    'WORK_RESTDAY.PHP'
+];
+$app_active = in_array($current_page, $app_pages);
+
+$approving_pages = [
+    'PENDING_LEAVES.PHP', 'APPROVER_OVERTIME.PHP', 'APPROVER_OFFICIAL_BUSINESS.PHP',
+    'APPROVER_CHANGE_SCHEDULE.PHP', 'APPROVER_FAILURE_CLOCK.PHP',
+    'APPROVER_CLOCK_ALTERATION.PHP', 'APPROVER_WORK_RESTDAY.PHP'
+];
+$approving_active = in_array($current_page, $approving_pages);
+
+$reports_pages = ['TIMECARD.PHP'];
+$reports_active = in_array($current_page, $reports_pages);
+?>
+
+<style>
+/* 🔹 Active page highlight */
+.nav-link.active {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+    font-weight: bold;
+    border-radius: 6px;
+}
+
+/* 🔹 Icon color when active */
+.nav-link.active .sb-nav-link-icon i {
+    color: #fff !important;
+}
+
+/* 🔹 Highlight parent menu if one of its children is active */
+.nav-link[data-bs-toggle="collapse"].active-parent {
+    background-color: rgba(13, 110, 253, 0.2);
+    color: #fff;
+    font-weight: bold;
+}
+</style>
+
+<div id="layoutSidenav">
+    <div id="layoutSidenav_nav">
+        <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+            <div class="sb-sidenav-menu">
+                <div class="nav">
+                    <a class="nav-link <?= ($current_page == 'INDEX.php') ? 'active' : '' ?>" href="INDEX.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        Dashboard
+                    </a>
+                    
+                    <!-- ======================= APPLICATIONS ======================= -->
+                    <a class="nav-link <?= $app_active ? 'active-parent' : 'collapsed' ?>"
+                       href="#" data-bs-toggle="collapse"
+                       data-bs-target="#collapseApplication"
+                       aria-expanded="<?= $app_active ? 'true' : 'false' ?>">
+                        <div class="sb-nav-link-icon"><i class="fas fa-file"></i></div>
+                        Application
+                        <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                    </a>
+
+                    <div class="collapse <?= $app_active ? 'show' : '' ?>" id="collapseApplication" data-bs-parent="#sidenavAccordion">
+                        <nav class="sb-sidenav-menu-nested nav">
+                            <a class="nav-link <?= ($current_page == 'LEAVE_APPLICATION.PHP') ? 'active' : '' ?>" href="LEAVE_APPLICATION.PHP">Leave Application</a>
+                            <a class="nav-link <?= ($current_page == 'OVERTIME.PHP') ? 'active' : '' ?>" href="OVERTIME.PHP">Overtime</a>
+                            <a class="nav-link <?= ($current_page == 'OFFICIAL_BUSINESS.PHP') ? 'active' : '' ?>" href="OFFICIAL_BUSINESS.PHP">Official Business</a>
+                            <a class="nav-link <?= ($current_page == 'CHANGE_SCHEDULE.PHP') ? 'active' : '' ?>" href="CHANGE_SCHEDULE.PHP">Change Schedule</a>
+                            <a class="nav-link <?= ($current_page == 'FAILURE_CLOCK.PHP') ? 'active' : '' ?>" href="FAILURE_CLOCK.PHP">Failure to Clock In/Out</a>
+                            <a class="nav-link <?= ($current_page == 'CLOCK_ALTERATION.PHP') ? 'active' : '' ?>" href="CLOCK_ALTERATION.PHP">Clock Alteration</a>
+                            <a class="nav-link <?= ($current_page == 'WORK_RESTDAY.PHP') ? 'active' : '' ?>" href="WORK_RESTDAY.PHP">Work On Restday</a>
+                        </nav>
+                    </div>
+
+                    <!-- ======================= APPROVING (IF APPROVER) ======================= -->
+                    <?php if ($approver): ?>
+                        <a class="nav-link <?= $approving_active ? 'active-parent' : 'collapsed' ?>"
+                           href="#" data-bs-toggle="collapse"
+                           data-bs-target="#collapseApproving"
+                           aria-expanded="<?= $approving_active ? 'true' : 'false' ?>">
+                            <div class="sb-nav-link-icon"><i class="fas fa-check-circle"></i></div>
+                            Approving
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse <?= $approving_active ? 'show' : '' ?>" id="collapseApproving" data-bs-parent="#sidenavAccordion">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link <?= ($current_page == 'PENDING_LEAVES.PHP') ? 'active' : '' ?>" href="PENDING_LEAVES.PHP">Leave Application</a>
+                                <a class="nav-link <?= ($current_page == 'APPROVER_OVERTIME.PHP') ? 'active' : '' ?>" href="APPROVER_OVERTIME.PHP">Overtime</a>
+                                <a class="nav-link <?= ($current_page == 'APPROVER_OFFICIAL_BUSINESS.PHP') ? 'active' : '' ?>" href="APPROVER_OFFICIAL_BUSINESS.PHP">Official Business</a>
+                                <a class="nav-link <?= ($current_page == 'APPROVER_CHANGE_SCHEDULE.PHP') ? 'active' : '' ?>" href="APPROVER_CHANGE_SCHEDULE.PHP">Change Schedule</a>
+                                <a class="nav-link <?= ($current_page == 'APPROVER_FAILURE_CLOCK.PHP') ? 'active' : '' ?>" href="APPROVER_FAILURE_CLOCK.PHP">Failure to Clock</a>
+                                <a class="nav-link <?= ($current_page == 'APPROVER_CLOCK_ALTERATION.PHP') ? 'active' : '' ?>" href="APPROVER_CLOCK_ALTERATION.PHP">Clock Alteration</a>
+                                <a class="nav-link <?= ($current_page == 'APPROVER_WORK_RESTDAY.PHP') ? 'active' : '' ?>" href="APPROVER_WORK_RESTDAY.PHP">Work Restday</a>
+                            </nav>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- ======================= OTHER MENUS ======================= -->
+                    <a class="nav-link <?= ($current_page == 'USER_MAINTENANCE.php') ? 'active' : '' ?>" href="USER_MAINTENANCE.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>Users Info
+                    </a>
+
+                    <a class="nav-link <?= ($current_page == 'DIRECTORY.php') ? 'active' : '' ?>" href="DIRECTORY.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-building"></i></div>Directory
+                    </a>
+
+                    <a class="nav-link <?= ($current_page == 'CONTACT_DETAILS.php') ? 'active' : '' ?>" href="CONTACT_DETAILS.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-phone"></i></div>Contact Details
+                    </a>
+
+                    <a class="nav-link <?= ($current_page == 'CALENDAR.php') ? 'active' : '' ?>" href="CALENDAR.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-calendar"></i></div>Calendar
+                    </a>
+
+                    <a class="nav-link <?= ($current_page == 'LOG_HISTORY.php') ? 'active' : '' ?>" href="LOG_HISTORY.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-clipboard-list"></i></div>Log History
+                    </a>
+
+                    <a class="nav-link <?= ($current_page == 'MAINTENANCE.php') ? 'active' : '' ?>" href="MAINTENANCE.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>Maintenance
+                    </a>
+
+                    <!-- ======================= REPORTS ======================= -->
+                    <a class="nav-link <?= $reports_active ? 'active-parent' : 'collapsed' ?>"
+                       href="#" data-bs-toggle="collapse"
+                       data-bs-target="#collapseReports"
+                       aria-expanded="<?= $reports_active ? 'true' : 'false' ?>">
+                        <div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div>
+                        Reports
+                        <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                    </a>
+
+                    <div class="collapse <?= $reports_active ? 'show' : '' ?>" id="collapseReports" data-bs-parent="#sidenavAccordion">
+                        <nav class="sb-sidenav-menu-nested nav">
+                            <a class="nav-link <?= ($current_page == 'TIMECARD.PHP') ? 'active' : '' ?>" href="TIMECARD.PHP">Timecard</a>
+                        </nav>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="sb-sidenav-footer">
+                <div class="small">Logged in as:</div>
+                <?= htmlspecialchars($user['username']); ?>
+            </div>
+        </nav>
+    </div>
+
+
