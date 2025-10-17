@@ -2,15 +2,15 @@
 session_start();
 require 'db.php'; // ✅ Your database connection
 
-// Set timeout duration (e.g., 30 minutes)
-$timeout_duration = 1800;
-if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY']) > $timeout_duration) {
-    session_unset();
-    session_destroy();
-    header("Location: LOGIN.php?timeout=1");
-    exit();
-}
-$_SESSION['LAST_ACTIVITY'] = time(); // update last activity
+// // Set timeout duration (e.g., 30 minutes)
+// $timeout_duration = 1800;
+// if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY']) > $timeout_duration) {
+//     session_unset();
+//     session_destroy();
+//     header("Location: LOGIN.php?timeout=1");
+//     exit();
+// }
+// $_SESSION['LAST_ACTIVITY'] = time(); // update last activity
 
 // --- Get payroll periods for the dropdown ---
 $periods = [];

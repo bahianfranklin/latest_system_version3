@@ -143,7 +143,7 @@ $reports_active = in_array($current_page, $reports_pages);
                         <nav class="sb-sidenav-menu-nested nav">
                             <a class="nav-link <?= ($current_page == 'TIMECARD.PHP') ? 'active' : '' ?>" href="TIMECARD.PHP">Timecard</a>
                             <a class="nav-link <?= ($current_page == 'TARDINESS_REPORT.PHP') ? 'active' : '' ?>" href="TARDINESS_REPORT.PHP">Tardiness</a>
-                            <a class="nav-link <?= ($current_page == 'LEAVE_CREDIT_MONITORING.PHP') ? 'active' : '' ?>" href="LEAVE_CREDIT_MONITORING.PHP">Leave Credit Monitoring</a>
+                            <a class="nav-link <?= ($current_page == 'LEAVE_CREDIT_MONITORING_1.PHP') ? 'active' : '' ?>" href="LEAVE_CREDIT_MONITORING_1.PHP">Leave Credit Monitoring</a>
                         </nav>
                     </div>
 

@@ -13,7 +13,7 @@ $years = [$currentYear, $currentYear + 1];
 $selectedYear = isset($_GET['year']) ? (int)$_GET['year'] : $currentYear;
 
 // ---------------------------------------------------
-// 🧭 STEP 1: Define default leave type structure
+// 1️⃣ Define leave types
 // ---------------------------------------------------
 $leaveTypes = [
     'Mandatory' => 0,
@@ -22,8 +22,14 @@ $leaveTypes = [
 ];
 
 // ---------------------------------------------------
-// 🧭 STEP 2: Get base leave credits (from leave_credits table)
+// 2️⃣ BASE CREDITS from leave_credits
 // ---------------------------------------------------
+$baseCredits = [
+    'Mandatory' => 0,
+    'Vacation' => 0,
+    'Sick' => 0
+];
+
 $baseCreditQuery = $conn->prepare("
     SELECT mandatory, vacation_leave, sick_leave
     FROM leave_credits
@@ -33,15 +39,21 @@ $baseCreditQuery->bind_param("ii", $user_id, $selectedYear);
 $baseCreditQuery->execute();
 $baseCreditResult = $baseCreditQuery->get_result();
 
-if ($baseCreditRow = $baseCreditResult->fetch_assoc()) {
-    $leaveTypes['Mandatory'] += (float)$baseCreditRow['mandatory'];
-    $leaveTypes['Vacation'] += (float)$baseCreditRow['vacation_leave'];
-    $leaveTypes['Sick'] += (float)$baseCreditRow['sick_leave'];
+if ($row = $baseCreditResult->fetch_assoc()) {
+    $baseCredits['Mandatory'] = (float)$row['mandatory'];
+    $baseCredits['Vacation'] = (float)$row['vacation_leave'];
+    $baseCredits['Sick'] = (float)$row['sick_leave'];
 }
 
 // ---------------------------------------------------
-// 🧭 STEP 3: Add credit logs (from leave_credit_logs table)
+// 3️⃣ TOTAL CREDITS from leave_credit_logs
 // ---------------------------------------------------
+$logCredits = [
+    'Mandatory' => 0,
+    'Vacation' => 0,
+    'Sick' => 0
+];
+
 $creditQuery = $conn->prepare("
     SELECT leave_type, SUM(new_value - old_value) as total
     FROM leave_credit_logs
@@ -53,14 +65,14 @@ $creditQuery->execute();
 $creditResult = $creditQuery->get_result();
 
 while ($row = $creditResult->fetch_assoc()) {
-    $type = $row['leave_type'];
-    if (isset($leaveTypes[$type])) {
-        $leaveTypes[$type] += (float)$row['total'];  // ✅ Add to base credits
+    $type = trim($row['leave_type']);
+    if (isset($logCredits[$type])) {
+        $logCredits[$type] += (float)$row['total'];
     }
 }
 
 // ---------------------------------------------------
-// 🧭 STEP 4: Normalize leave_type names for requests
+// 4️⃣ Normalize leave type names for requests
 // ---------------------------------------------------
 $typeMap = [
     'Mandatory Leave' => 'Mandatory',
@@ -72,8 +84,11 @@ $typeMap = [
 ];
 
 // ---------------------------------------------------
-// 🧭 STEP 5: Get usage (Approved / Pending from leave_requests)
+// 5️⃣ CREDIT USED & PENDING from leave_requests
 // ---------------------------------------------------
+$used = ['Mandatory' => 0, 'Vacation' => 0, 'Sick' => 0];
+$pending = ['Mandatory' => 0, 'Vacation' => 0, 'Sick' => 0];
+
 $usageQuery = $conn->prepare("
     SELECT leave_type, status, SUM(credit_value) as total
     FROM leave_requests
@@ -85,19 +100,29 @@ $usageQuery->bind_param("ii", $user_id, $selectedYear);
 $usageQuery->execute();
 $usageResult = $usageQuery->get_result();
 
-$used = [];
-$pending = [];
-
 while ($row = $usageResult->fetch_assoc()) {
     $mappedType = $typeMap[$row['leave_type']] ?? $row['leave_type'];
-    $totalValue = (float)$row['total'];
-
-    if ($row['status'] === 'Approved') {
-        $used[$mappedType] = ($used[$mappedType] ?? 0) + $totalValue;
-    } elseif ($row['status'] === 'Pending') {
-        $pending[$mappedType] = ($pending[$mappedType] ?? 0) + $totalValue;
+    $value = (float)$row['total'];
+    if (isset($used[$mappedType])) {
+        if ($row['status'] === 'Approved') {
+            $used[$mappedType] += $value;
+        } elseif ($row['status'] === 'Pending') {
+            $pending[$mappedType] += $value;
+        }
     }
 }
+
+// ---------------------------------------------------
+// 6️⃣ ENDING & REMAINING CREDITS
+// Ending Credit: pulled from leave_credits table (actual current balance)
+// Remaining Credit: Ending Credit - Pending
+// ---------------------------------------------------
+$endingCredits = $baseCredits; // if you store actual balance in leave_credits table
+$remainingCredits = [
+    'Mandatory' => $endingCredits['Mandatory'] - $pending['Mandatory'],
+    'Vacation' => $endingCredits['Vacation'] - $pending['Vacation'],
+    'Sick' => $endingCredits['Sick'] - $pending['Sick']
+];
 ?>
 
 <?php include __DIR__ . '/layout/HEADER'; ?>
@@ -128,42 +153,43 @@ while ($row = $usageResult->fetch_assoc()) {
             <thead class="table-dark">
                 <tr>
                     <th>Leave Type</th>
-                    <th>Total Credits (Base + Logs)</th>
+                    <th>Total Credits (Logs)</th>
                     <th>Credit Used</th>
                     <th>Pending</th>
-                    <th>Ending Credits (Total - Used)</th>
-                    <th>Remaining Credits (Total - Used - Pending)</th>
+                    <th>Ending Credits (from leave_credits)</th>
+                    <th>Remaining Credits</th>
                 </tr>
             </thead>
             <tbody>
                 <?php 
-                $totalAll = $totalUsed = $totalPending = $totalEnding = $totalRemaining = 0;
-                foreach ($leaveTypes as $type => $totalCredit): 
+                $totalLog = $totalUsed = $totalPending = $totalEnding = $totalRemaining = 0;
+                foreach ($leaveTypes as $type => $_):
+                    $logVal = $logCredits[$type] ?? 0;
                     $usedVal = $used[$type] ?? 0;
                     $pendingVal = $pending[$type] ?? 0;
-                    $endingCredit = $totalCredit - $usedVal;
-                    $remainingCredit = $totalCredit - ($usedVal + $pendingVal);
+                    $endingVal = $endingCredits[$type] ?? 0;
+                    $remainingVal = $remainingCredits[$type] ?? 0;
 
-                    $totalAll += $totalCredit;
+                    $totalLog += $logVal;
                     $totalUsed += $usedVal;
                     $totalPending += $pendingVal;
-                    $totalEnding += $endingCredit;
-                    $totalRemaining += $remainingCredit;
+                    $totalEnding += $endingVal;
+                    $totalRemaining += $remainingVal;
                 ?>
                 <tr>
                     <td><?= htmlspecialchars($type) ?></td>
-                    <td><?= number_format($totalCredit, 2) ?></td>
+                    <td><?= number_format($logVal, 2) ?></td>
                     <td><?= number_format($usedVal, 2) ?></td>
                     <td><?= number_format($pendingVal, 2) ?></td>
-                    <td><?= number_format($endingCredit, 2) ?></td>
-                    <td><?= number_format($remainingCredit, 2) ?></td>
+                    <td><?= number_format($endingVal, 2) ?></td>
+                    <td><?= number_format($remainingVal, 2) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
             <tfoot class="table-secondary">
                 <tr>
                     <th>Total</th>
-                    <th><?= number_format($totalAll, 2) ?></th>
+                    <th><?= number_format($totalLog, 2) ?></th>
                     <th><?= number_format($totalUsed, 2) ?></th>
                     <th><?= number_format($totalPending, 2) ?></th>
                     <th><?= number_format($totalEnding, 2) ?></th>
