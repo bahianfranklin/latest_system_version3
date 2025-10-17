@@ -73,21 +73,52 @@
         $stmt->fetch();
         $stmt->close();
 
+        // Get current user for logging
+        $changed_by = $_SESSION['user_id'] ?? 0;
+        $year = date('Y');
+        $change_date = date('Y-m-d H:i:s');
+
         if ($count > 0) {
+            // Fetch old values before update
+            $stmt_old = $conn->prepare("SELECT mandatory, vacation_leave, sick_leave FROM leave_credits WHERE user_id = ?");
+            $stmt_old->bind_param("i", $id);
+            $stmt_old->execute();
+            $stmt_old->bind_result($old_mandatory, $old_vacation, $old_sick);
+            $stmt_old->fetch();
+            $stmt_old->close();
+
+            // Update the record
             $stmt = $conn->prepare("UPDATE leave_credits 
                                     SET mandatory=?, vacation_leave=?, sick_leave=?
                                     WHERE user_id=?");
             $stmt->bind_param("iiii", $mandatory, $vacation, $sick, $id);
+            $stmt->execute();
+            $stmt->close();
+
+            // Log changes if any
+            if ($mandatory != $old_mandatory) {
+                log_leave_change($conn, $id, $year, 'Mandatory', $old_mandatory, $mandatory, 'Amendment', $changed_by, 'Updated via leave_credit.php', $change_date);
+            }
+            if ($vacation != $old_vacation) {
+                log_leave_change($conn, $id, $year, 'Vacation', $old_vacation, $vacation, 'Amendment', $changed_by, 'Updated via leave_credit.php', $change_date);
+            }
+            if ($sick != $old_sick) {
+                log_leave_change($conn, $id, $year, 'Sick', $old_sick, $sick, 'Amendment', $changed_by, 'Updated via leave_credit.php', $change_date);
+            }
+
         } else {
+            // Insert new credits
             $stmt = $conn->prepare("INSERT INTO leave_credits (user_id, mandatory, vacation_leave, sick_leave) 
                                     VALUES (?, ?, ?, ?)");
             $stmt->bind_param("iiii", $id, $mandatory, $vacation, $sick);
-        }
+            $stmt->execute();
+            $stmt->close();
 
-        if (!$stmt->execute()) {
-            die("Database error: " . $stmt->error);
+            // Log all as "Reset" since it's new
+            log_leave_change($conn, $id, $year, 'Mandatory', 0, $mandatory, 'Reset', $changed_by, 'New entry via leave_credit.php', $change_date);
+            log_leave_change($conn, $id, $year, 'Vacation', 0, $vacation, 'Reset', $changed_by, 'New entry via leave_credit.php', $change_date);
+            log_leave_change($conn, $id, $year, 'Sick', 0, $sick, 'Reset', $changed_by, 'New entry via leave_credit.php', $change_date);
         }
-        $stmt->close();
 
         // Redirect to refresh page (prevents duplicate form submission)
         if ($isStandalone) {
@@ -115,6 +146,15 @@
 
     }
     ob_end_flush();
+
+    function log_leave_change($conn, $user_id, $year, $leave_type, $old_value, $new_value, $change_type, $changed_by, $remarks, $change_date) {
+        $stmt = $conn->prepare("INSERT INTO leave_credit_logs 
+            (user_id, year, leave_type, old_value, new_value, change_type, changed_by, remarks, change_date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisiisiss", $user_id, $year, $leave_type, $old_value, $new_value, $change_type, $changed_by, $remarks, $change_date);
+        $stmt->execute();
+        $stmt->close();
+    }
 ?>
 
 <?php if ($isStandalone): ?>
@@ -285,6 +325,5 @@
             document.getElementById('deleteUserName').textContent = button.getAttribute('data-name')
         })
         </script>
-
     </body>
 </html>
