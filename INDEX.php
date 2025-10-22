@@ -22,6 +22,28 @@
     // ✅ Get Events
     $today = date("Y-m-d");
 
+    // -----------------------------
+    // Fetch the latest 3 announcements
+    // -----------------------------
+    $announcements = []; // default empty so template never breaks
+
+    $announcement_sql = "
+        SELECT id, title, description, created_at
+        FROM announcements
+        ORDER BY created_at DESC
+        LIMIT 3
+    ";
+
+    if ($stmtA = $conn->prepare($announcement_sql)) {
+        $stmtA->execute();
+        $resA = $stmtA->get_result();
+        if ($resA) {
+            while ($row = $resA->fetch_assoc()) {
+                $announcements[] = $row;
+            }
+        }
+        $stmtA->close();
+    }
 ?>
 
         <?php include __DIR__ . '/layout/HEADER'; ?>
@@ -43,6 +65,32 @@
                         </div>
                     </div>
 
+                    <!-- Announcements -->
+                    <div class="container">
+                        <div class="card mb-3 mt-4">
+                            <div class="card-header bg-dark text-white">
+                                📢 Announcements
+                            </div>
+                            <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                                <?php if (!empty($announcements)): ?>
+                                    <?php foreach ($announcements as $a): ?>
+                                        <div class="border-bottom mb-2 pb-2">
+                                            <h6 class="fw-bold mb-1">
+                                                <?= htmlspecialchars($a['title']); ?>
+                                            </h6>
+                                            <p class="mb-1"><?= nl2br(htmlspecialchars($a['description'])); ?></p>
+                                            <small class="text-muted">
+                                                Posted on <?= date('F j, Y g:i A', strtotime($a['created_at'])); ?>
+                                            </small>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <p class="text-muted">No announcements at the moment.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="container">
                         <h1 class="mb-4"></h1>
                         <!-- Work From Home Section -->

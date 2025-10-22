@@ -92,9 +92,10 @@
                                                 <input class="form-control" id="inputUsername" name="username" type="text" placeholder="Username" required />
                                                 <label for="inputUsername">Username</label>
                                             </div>
-                                            <div class="form-floating mb-3">
+                                            <div class="form-floating mb-3 position-relative">
                                                 <input class="form-control" id="inputPassword" name="password" type="password" placeholder="Password" required />
                                                 <label for="inputPassword">Password</label>
+                                                <i class="bi bi-eye-slash position-absolute top-50 end-0 translate-middle-y me-3" id="togglePassword" style="cursor: pointer;"></i>
                                             </div>
                                             <div class="form-check mb-3">
                                                 <input class="form-check-input" id="inputRememberPassword" type="checkbox" />
@@ -119,5 +120,19 @@
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
         <script src="js/scripts.js"></script>
+
+        <script>
+            const togglePassword = document.querySelector('#togglePassword');
+            const passwordInput = document.querySelector('#inputPassword');
+
+            togglePassword.addEventListener('click', function () {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                // toggle icon between eye and eye-slash
+                this.classList.toggle('bi-eye');
+                this.classList.toggle('bi-eye-slash');
+            });
+        </script>
     </body>
 </html>

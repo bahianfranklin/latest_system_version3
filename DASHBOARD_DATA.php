@@ -200,3 +200,10 @@ echo json_encode([
     'period' => $period,
     'pending' => $pending
 ]);
+
+// ✅ Get Announcements
+$announcement_sql = "SELECT id, title, description, created_at 
+                     FROM announcements 
+                     ORDER BY created_at DESC 
+                     LIMIT 5";  // show only latest 5
+$announcement_result = $conn->query($announcement_sql);
