@@ -47,6 +47,12 @@
                     <li class="nav-item">
                         <a class="nav-link <?= $activeTab=='payroll' ? 'active' : '' ?>" data-bs-toggle="tab" href="#payroll">Payroll Period</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $activeTab=='roles' ? 'active' : '' ?>" data-bs-toggle="tab" href="#roles">User Role</a>
+                    </li>
+                      <li class="nav-item">
+                        <a class="nav-link <?= $activeTab=='create_pass' ? 'active' : '' ?>" data-bs-toggle="tab" href="#create_pass">Biometrics Password</a>
+                    </li>
                 </ul>
 
                 <div class="tab-content mt-3">
@@ -70,6 +76,12 @@
                     </div>
                     <div class="tab-pane fade <?= $activeTab=='payroll' ? 'show active' : '' ?>" id="payroll">
                         <?php include 'PAYROLL_PERIODS.php'; ?>
+                    </div>
+                    <div class="tab-pane fade <?= $activeTab=='roles' ? 'show active' : '' ?>" id="roles">
+                        <?php include 'ROLE.php'; ?>
+                    </div>
+                    <div class="tab-pane fade <?= $activeTab=='create_pass' ? 'show active' : '' ?>" id="create_pass">
+                        <?php include 'CREATE_PASSWORD.php'; ?>
                     </div>
                 </div>
             </div>
