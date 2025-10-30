@@ -22,7 +22,7 @@ $approving_pages = [
 ];
 $approving_active = in_array($current_page, $approving_pages);
 
-$reports_pages = ['TIMECARD.PHP', 'TARDINESS_REPORT.PHP', 'LEAVE_CREDIT_MONITORING_1.PHP'];
+$reports_pages = ['TIMECARD.PHP', 'TARDINESS_REPORT.PHP', 'LEAVE_CREDIT_MONITORING_1.PHP', 'LEAVE_TRANSACTION.PHP'];
 $reports_active = in_array($current_page, $reports_pages);
 ?>
 
@@ -144,6 +144,7 @@ $reports_active = in_array($current_page, $reports_pages);
                             <a class="nav-link <?= ($current_page == 'TIMECARD.PHP') ? 'active' : '' ?>" href="TIMECARD.PHP">Timecard</a>
                             <a class="nav-link <?= ($current_page == 'TARDINESS_REPORT.PHP') ? 'active' : '' ?>" href="TARDINESS_REPORT.PHP">Tardiness</a>
                             <a class="nav-link <?= ($current_page == 'LEAVE_CREDIT_MONITORING_1.PHP') ? 'active' : '' ?>" href="LEAVE_CREDIT_MONITORING_1.PHP">Leave Credit Monitoring</a>
+                            <a class="nav-link <?= ($current_page == 'LEAVE_TRANSACTION.PHP') ? 'active' : '' ?>" href="LEAVE_TRANSACTION.PHP">Leave Transaction</a>
                         </nav>
                     </div>
 
