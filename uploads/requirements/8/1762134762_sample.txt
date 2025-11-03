@@ -1,0 +1,154 @@
+i want to create profile module 
+
+[PICTURE] [FULLNAME]		[BRANCH]	[LEVEL]
+	  [EMPLOYEE NO.]	[DEPARTMENT]	[DATE HIRED]
+	  [ADDRESS:]		[POSITION]	[STATUS]
+
+=================================================================
+TABS | PERSONAL INFORMATION | WORK DETAILS
+
+**PERSONAL INFORMATION (DISPLAY ONLY)
+
+EMPLOYEE ID
+FULL NAME
+CONTACT
+DATE OF BIRTH
+PLACE OF BIRTH
+AGE
+GENDER
+CIVIL STATUS
+NATIONALITY
+RELIGION
+MOBILE NO.
+EMAIL ADDRESS
+ADDRESS
+REGION
+PROVINCE
+CITY/MUNICIPALITY 
+CONTACT PERSON
+CONTACT PERSON RELATIONSHIP
+CONTACT PERSON ADDRESS
+CONTACT PERSON CONTACT NO.:
+MOTHER'S NAME
+FATHER'S NAME
+
+** WORK DETAILS (DISPLAY ONLY)
+BANK ACCOUNT NO.:
+SSS NO.:
+PHILHEALTH NO.:
+PAG-IBIG NO.:
+TIN NO.:
+DATE HIRED
+REGULARIZATION DATE
+BRANCH
+DEPARTMENT
+POSITION
+LEVEL
+TAX CATEGORY
+STATUS 
+LEAVE RULE 
+
+**WORKING SCHEDULE (DISPLAY ONLY)
+
+WORKING HOURS
+MONDAY (IN - OUT)
+TUESDAY (IN - OUT)
+WEDNESDAY (IN - OUT)
+THURSDAY (IN - OUT)
+FRIDAY (WORK FROM HOME)
+SATURDAY (REST DAY)
+SUNDAY (REST DAY)
+
+I ALREADY HAVE A TABLES 
+
+Table: employee_working 	
+Type	Collation
+id	int(11)
+	
+user_id	int(11)
+	
+work_day	enum('Monday', 'Tuesday', 'Wednesday', 'Thursday',...
+	
+time_in	time
+	
+time_out	time
+	
+Table:users	
+Name	Type
+id	int(11)
+	
+name	varchar(100)
+	
+address	varchar(200)
+	
+contact	varchar(50)
+	
+birthday	date
+	
+email	varchar(100)
+	
+username	varchar(100)
+	
+role	varchar(50)
+	
+status	enum('active', 'inactive')
+	
+password	varchar(255)
+	
+profile_pic	varchar(255)
+	
+	
+Table:work_details	
+Type	Collation
+work_detail_id	int(10)
+	
+employee_no	varchar(20)
+	
+bank_account_no	varchar(50)
+	
+sss_no	varchar(20)
+	
+philhealth_no	varchar(25)
+	
+pagibig_no	varchar(25)
+	
+tin_no	varchar(20)
+	
+date_hired	date
+	
+regularization	date
+	
+branch	varchar(100)
+	
+department	varchar(150)
+	
+position	varchar(100)
+	
+level_desc	varchar(100)
+	
+tax_category	varchar(50)
+	
+status_desc	varchar(50)
+	
+leave_rule	varchar(100)
+	
+created_at	datetime
+	
+user_id	int(10)
+	
+	
+Table: employee_schedules	
+Type	Collation
+id	int(11)	
+user_id	int(11)
+monday	enum('work_from_home', 'onsite', 'rest_day')
+tuesday	enum('work_from_home', 'onsite', 'rest_day')
+wednesday	enum('work_from_home', 'onsite', 'rest_day')
+thursday	enum('work_from_home', 'onsite', 'rest_day')
+friday	enum('work_from_home', 'onsite', 'rest_day')
+saturday	enum('work_from_home', 'onsite', 'rest_day')
+sunday	enum('work_from_home', 'onsite', 'rest_day')
+created_at	timestamp
+updated_at	timestamp
+
+VIEW_PROFILE.PHP

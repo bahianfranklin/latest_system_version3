@@ -218,7 +218,14 @@
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="card mb-3">
                         <div class="card-header bg-primary text-white">Leave Balance</div>
-                        <div class="card-body"><div id="leaveBalance">Loading leave balance...</div></div>
+                        <div class="card-body text-center">
+                        <div id="leaveBalance" class="mb-3">
+                            Loading leave balance...
+                        </div>
+                        <a href="LEAVE_APPLICATION.php" class="btn btn-primary">
+                            Apply for Leave
+                        </a>
+                        </div>
                     </div>
                 </div>
 

@@ -28,6 +28,12 @@
                     <a class="nav-link <?= $activeTab=='working_hours' ? 'active' : '' ?>" data-bs-toggle="tab" href="#working_hours">Working Hours</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link <?= $activeTab=='201_files' ? 'active' : '' ?>" data-bs-toggle="tab" href="#201_files">201 Files</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $activeTab=='salary_rate' ? 'active' : '' ?>" data-bs-toggle="tab" href="#salary_rate">HR Salary Mgnt</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link <?= $activeTab=='approver_maintenance' ? 'active' : '' ?>" data-bs-toggle="tab" href="#approver_maintenance">Approvers Maintenance</a>
                 </li>
             </ul>
@@ -44,6 +50,12 @@
                 </div>
                 <div class="tab-pane fade <?= $activeTab=='working_hours' ? 'show active' : '' ?>" id="working_hours">
                     <?php include 'WORKING_HOURS.php'; ?>
+                </div>
+                <div class="tab-pane fade <?= $activeTab=='201_files' ? 'show active' : '' ?>" id="201_files">
+                    <?php include '201_FILE.php'; ?>
+                </div>
+                <div class="tab-pane fade <?= $activeTab=='salary_rate' ? 'show active' : '' ?>" id="salary_rate">
+                    <?php include 'SALARY_RATE.PHP'; ?>
                 </div>
                 <div class="tab-pane fade <?= $activeTab=='approver_maintenance' ? 'show active' : '' ?>" id="approver_maintenance">
                     <?php include 'APPROVER_MAINTENANCE.php'; ?>
