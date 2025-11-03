@@ -50,8 +50,11 @@
                     <li class="nav-item">
                         <a class="nav-link <?= $activeTab=='roles' ? 'active' : '' ?>" data-bs-toggle="tab" href="#roles">User Role</a>
                     </li>
-                      <li class="nav-item">
+                    <li class="nav-item">
                         <a class="nav-link <?= $activeTab=='create_pass' ? 'active' : '' ?>" data-bs-toggle="tab" href="#create_pass">Biometrics Password</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $activeTab=='requirements_list' ? 'active' : '' ?>" data-bs-toggle="tab" href="#requirements_list">Requirement List</a>
                     </li>
                 </ul>
 
@@ -82,6 +85,9 @@
                     </div>
                     <div class="tab-pane fade <?= $activeTab=='create_pass' ? 'show active' : '' ?>" id="create_pass">
                         <?php include 'CREATE_PASSWORD.php'; ?>
+                    </div>
+                    <div class="tab-pane fade <?= $activeTab=='requirements_list' ? 'show active' : '' ?>" id="requirements_list">
+                        <?php include 'REQUIREMENTS_LIST.PHP'; ?>
                     </div>
                 </div>
             </div>

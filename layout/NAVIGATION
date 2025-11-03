@@ -57,7 +57,10 @@ $reports_active = in_array($current_page, $reports_pages);
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                         Dashboard
                     </a>
-                    
+                    <a class="nav-link <?= ($current_page == 'VIEW_PROFILE.php') ? 'active' : '' ?>" href="VIEW_PROFILE.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-id-card me-1"></i></div>
+                        Profile
+                    </a>
                     <!-- ======================= APPLICATIONS ======================= -->
                     <a class="nav-link <?= $app_active ? 'active-parent' : 'collapsed' ?>"
                        href="#" data-bs-toggle="collapse"
