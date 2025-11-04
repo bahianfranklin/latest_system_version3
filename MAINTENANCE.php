@@ -56,6 +56,9 @@
                     <li class="nav-item">
                         <a class="nav-link <?= $activeTab=='requirements_list' ? 'active' : '' ?>" data-bs-toggle="tab" href="#requirements_list">Requirement List</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $activeTab=='modules' ? 'active' : '' ?>" data-bs-toggle="tab" href="#modules">Modules</a>
+                    </li>
                 </ul>
 
                 <div class="tab-content mt-3">
@@ -88,6 +91,9 @@
                     </div>
                     <div class="tab-pane fade <?= $activeTab=='requirements_list' ? 'show active' : '' ?>" id="requirements_list">
                         <?php include 'REQUIREMENTS_LIST.PHP'; ?>
+                    </div>
+                    <div class="tab-pane fade <?= $activeTab=='modules' ? 'show active' : '' ?>" id="modules">
+                        <?php include 'MODULES.PHP'; ?>
                     </div>
                 </div>
             </div>

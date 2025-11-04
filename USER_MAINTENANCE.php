@@ -36,6 +36,9 @@
                 <li class="nav-item">
                     <a class="nav-link <?= $activeTab=='approver_maintenance' ? 'active' : '' ?>" data-bs-toggle="tab" href="#approver_maintenance">Approvers Maintenance</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $activeTab=='role_access_management' ? 'active' : '' ?>" data-bs-toggle="tab" href="#role_access_management">Role Access Mngt</a>
+                </li>
             </ul>
 
             <div class="tab-content mt-3">
@@ -59,6 +62,9 @@
                 </div>
                 <div class="tab-pane fade <?= $activeTab=='approver_maintenance' ? 'show active' : '' ?>" id="approver_maintenance">
                     <?php include 'APPROVER_MAINTENANCE.php'; ?>
+                </div>
+                <div class="tab-pane fade <?= $activeTab=='role_access_management' ? 'show active' : '' ?>" id="role_access_management">
+                    <?php include 'ROLE_ACCESS_MANAGEMENT.php'; ?>
                 </div>
             </div>           
         </div>

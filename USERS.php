@@ -4,6 +4,7 @@
         session_start();
     }
     require 'db.php';
+    // require 'auth_helper.php';
 
     // ✅ Assume logged-in user
     $user_id = $_SESSION['user_id'] ?? 1; // change if needed
@@ -57,6 +58,19 @@
     // ✅ Fetch paginated + sorted records
     $sql = "SELECT * FROM users $where ORDER BY name ASC LIMIT $offset, $perPage";
     $result = $conn->query($sql);
+
+    
+//     // Get user role
+//     $roleQuery = $conn->prepare("SELECT role FROM users WHERE id = ?");
+//     $roleQuery->bind_param("i", $user_id);
+//     $roleQuery->execute();
+//     $roleResult = $roleQuery->get_result()->fetch_assoc();
+//     $role_id = $roleResult ? $roleResult['role'] : 0;
+
+//     // Check if user can view this module
+//     if (!hasAccess($role_id, 'USERS.php', 'view')) {
+//         die("<div style='padding:20px;color:red;'>Access Denied: You cannot view this module.</div>");
+// }
 ?>
 
 <!DOCTYPE html>
@@ -232,5 +246,19 @@
         <br>
         <!-- ✅ Bootstrap JS (for dropdowns, modals, etc.) -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 
+        ?php if (hasAccess($role_id, 'USERS.php', 'add')): ?>
+            <a href="add_user.php" class="btn btn-primary">Add User</a>
+        ?php endif; ?>
+
+        ?php if (hasAccess($role_id, 'USERS.php', 'edit')): ?>
+            <a href="edit_user.php?id=?= $user['id'] ?>" class="btn btn-warning">Edit</a>
+        ?php endif; ?>
+
+        ?php if (hasAccess($role_id, 'USERS.php', 'delete')): ?>
+            <a href="delete_user.php?id=?= $user['id'] ?>" class="btn btn-danger">Delete</a>
+        ?php endif; ?> -->
+
+
     </body>
 </html>
