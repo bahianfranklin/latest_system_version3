@@ -55,16 +55,35 @@
                     class="rounded-circle border shadow-sm" 
                     width="120" height="120">
             </div>
-            <h5 class="mb-3 text-primary"><i class="fa fa-user"></i> Basic Information</h5>
+            <h5 class="mb-3 text-primary"><i class="fa fa-user"></i> Personal Information</h5>
             <table class="table table-bordered">
-                <tr><th style="width: 200px;">Name</th><td><?= htmlspecialchars($user['name']) ?></td></tr>
-                <tr><th>Email</th><td><?= htmlspecialchars($user['email']) ?></td></tr>
-                <tr><th>Username</th><td><?= htmlspecialchars($user['username']) ?></td></tr>
-                <tr><th>Role</th><td><?= htmlspecialchars($user['role']) ?></td></tr>
+                <tr><th>Name</th><td><?= htmlspecialchars($user['name'] ?? '') ?></td></tr>
+                <tr><th>Gender</th><td><?= htmlspecialchars($user['gender'] ?? '') ?></td></tr>
+                <tr><th>Civil Status</th><td><?= htmlspecialchars($user['civil_status'] ?? '') ?></td></tr>
+                <tr><th>Nationality</th><td><?= htmlspecialchars($user['nationality'] ?? '') ?></td></tr>
+                <tr><th>Religion</th><td><?= htmlspecialchars($user['religion'] ?? '') ?></td></tr>
+                <tr><th>Birthday</th><td><?= htmlspecialchars($user['birthday'] ?? '') ?></td></tr>
+                <tr><th>Age</th><td><?= htmlspecialchars($user['age'] ?? '') ?></td></tr>
+                <tr><th>Place of Birth</th><td><?= htmlspecialchars($user['place_of_birth'] ?? '') ?></td></tr>
+                <tr><th>Contact</th><td><?= htmlspecialchars($user['contact'] ?? '') ?></td></tr>
+                <tr><th>Mobile No.</th><td><?= htmlspecialchars($user['mobile_no'] ?? '') ?></td></tr>
+                <tr><th>Email</th><td><?= htmlspecialchars($user['email'] ?? '') ?></td></tr>
+                <tr><th>Address</th><td><?= htmlspecialchars($user['address'] ?? '') ?></td></tr>
+                <tr><th>Region</th><td><?= htmlspecialchars($user['region'] ?? '') ?></td></tr>
+                <tr><th>Province</th><td><?= htmlspecialchars($user['province'] ?? '') ?></td></tr>
+                <tr><th>City / Municipality</th><td><?= htmlspecialchars($user['city_municipality'] ?? '') ?></td></tr>
+                <tr><th>Contact Person</th><td><?= htmlspecialchars($user['contact_person'] ?? '') ?></td></tr>
+                <tr><th>Contact Person Relationship</th><td><?= htmlspecialchars($user['contact_person_relationship'] ?? '') ?></td></tr>
+                <tr><th>Contact Person Address</th><td><?= htmlspecialchars($user['contact_person_address'] ?? '') ?></td></tr>
+                <tr><th>Contact Person Contact No.</th><td><?= htmlspecialchars($user['contact_person_contact'] ?? '') ?></td></tr>
+                <tr><th>Mother's Name</th><td><?= htmlspecialchars($user['mother_name'] ?? '') ?></td></tr>
+                <tr><th>Father's Name</th><td><?= htmlspecialchars($user['father_name'] ?? '') ?></td></tr>
+                <tr><th>Username</th><td><?= htmlspecialchars($user['username'] ?? '') ?></td></tr>
+                <tr><th>Role</th><td><?= htmlspecialchars($user['role'] ?? '') ?> <?= isset($user['role_id']) ? '(ID: '.htmlspecialchars($user['role_id']).')' : '' ?></td></tr>
                 <tr><th>Status</th>
                     <td>
-                        <span class="badge bg-<?= $user['status'] == 'active' ? 'success' : 'secondary' ?>">
-                            <?= ucfirst($user['status']) ?>
+                        <span class="badge bg-<?= ($user['status'] ?? '') == 'active' ? 'success' : 'secondary' ?>">
+                            <?= ucfirst($user['status'] ?? '') ?>
                         </span>
                     </td>
                 </tr>

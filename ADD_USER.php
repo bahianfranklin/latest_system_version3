@@ -1,6 +1,10 @@
 <?php
     session_start();
     require 'db.php';
+    
+    if (!$conn) {
+        die("Database connection failed: " . mysqli_connect_error());
+    }
 
     $errors = [];
     $success = "";
@@ -27,15 +31,31 @@
 
     // ✅ Handle form submission
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $name     = trim($_POST['name']);
-        $address  = trim($_POST['address']);
-        $contact  = trim($_POST['contact']);
-        $birthday = $_POST['birthday'];
-        $email    = trim($_POST['email']);
-        $username = trim($_POST['username']);
-        $role     = $_POST['role'];
-        $status   = $_POST['status'];
-        $password = trim($_POST['password']);
+        // collect and normalize POST inputs into variables (bind_param requires variables)
+        $name     = trim($_POST['name'] ?? '');
+        $gender   = trim($_POST['gender'] ?? '');
+        $civil_status = trim($_POST['civil_status'] ?? '');
+        $nationality = trim($_POST['nationality'] ?? '');
+        $religion = trim($_POST['religion'] ?? '');
+        $address  = trim($_POST['address'] ?? '');
+        $region   = trim($_POST['region'] ?? '');
+        $province = trim($_POST['province'] ?? '');
+        $city_municipality = trim($_POST['city_municipality'] ?? '');
+        $contact  = trim($_POST['contact'] ?? '');
+        $mobile_no = trim($_POST['mobile_no'] ?? '');
+        $birthday = $_POST['birthday'] ?? null;
+        $place_of_birth = trim($_POST['place_of_birth'] ?? '');
+        $mother_name = trim($_POST['mother_name'] ?? '');
+        $father_name = trim($_POST['father_name'] ?? '');
+        $contact_person = trim($_POST['contact_person'] ?? '');
+        $contact_person_relationship = trim($_POST['contact_person_relationship'] ?? '');
+        $contact_person_address = trim($_POST['contact_person_address'] ?? '');
+        $contact_person_contact = trim($_POST['contact_person_contact'] ?? '');
+        $email    = trim($_POST['email'] ?? '');
+        $username = trim($_POST['username'] ?? '');
+        $status   = $_POST['status'] ?? '';
+        $password = trim($_POST['password'] ?? '');
+        $role_id = isset($_POST['role_id']) && $_POST['role_id'] !== '' ? intval($_POST['role_id']) : null;
         $profile_pic = null;
 
         // ✅ User Info Validation
@@ -46,7 +66,7 @@
         if (empty($username)) $errors[] = "Username is required.";
         if (empty($password)) $errors[] = "Password is required.";
 
-        if (!preg_match("/^[0-9]+$/", $_POST['contact'])) 
+        if (!preg_match("/^[0-9]+$/", $contact)) 
             $errors[] = "Contact must be numbers only.";
 
         // ✅ Work Details Validation
@@ -94,6 +114,7 @@
         }
 
         // ✅ Handle profile picture upload
+        $profile_pic = "img_temp.png"; // Default profile picture
         if (!empty($_FILES['profile_pic']['name'])) {
             $targetDir = "uploads/";
             if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
@@ -108,24 +129,47 @@
             }
         }
 
-        $profile_pic = "img_temp.png";
-        if (!empty($_FILES['profile_pic']['name'])) {
-            $fileName = time() . "_" . basename($_FILES["profile_pic"]["name"]);
-            $targetFilePath = $targetDir . $fileName;
-
-            if (move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $targetFilePath)) {
-                $profile_pic = $fileName;
-            }
-        }
-
         // ✅ If no errors, insert into database
         if (empty($errors)) {
 
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
-            $stmt = $conn->prepare("INSERT INTO users (name, address, contact, birthday, email, username, role, status, password, profile_pic) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssss", $name, $address, $contact, $birthday, $email, $username, $role, $status, $hashedPassword, $profile_pic);
+            $stmt = $conn->prepare("INSERT INTO users 
+                (name, gender, civil_status, nationality, religion, address, region, province, city_municipality,
+                contact, mobile_no, birthday, place_of_birth, mother_name, father_name,
+                contact_person, contact_person_relationship, contact_person_address, contact_person_contact,
+                email, username, status, password, profile_pic, role_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+
+                // 25 parameters -> 25 "s" types (role_id is integer but can be sent as string or adjust to "i")
+                $types = str_repeat('s', 25);
+                $stmt->bind_param($types, 
+                    $name,
+                    $gender,
+                    $civil_status,
+                    $nationality,
+                    $religion,
+                    $address,
+                    $region,
+                    $province,
+                    $city_municipality,
+                    $contact,
+                    $mobile_no,
+                    $birthday,
+                    $place_of_birth,
+                    $mother_name,
+                    $father_name,
+                    $contact_person,
+                    $contact_person_relationship,
+                    $contact_person_address,
+                    $contact_person_contact,
+                    $email,
+                    $username,
+                    $status,
+                    $hashedPassword,
+                    $profile_pic,
+                    $role_id
+                );
 
             if ($stmt->execute()) {
             // Get the last inserted user_id
@@ -147,7 +191,7 @@
             if ($stmt2->execute()) {
                 //$success = "User and Work Details added successfully!";
                 $_SESSION['success'] = "User and Work Details added successfully!";
-                header("Location: add_user1-Copy.php");
+                header("Location: ADD_USER.php");
                 exit();
             } else {
                 $errors[] = "Failed to insert work details: " . $stmt2->error;
@@ -163,6 +207,8 @@
 
     // ✅ Fetch all branches for dropdown
     $branches = $conn->query("SELECT id, branch FROM branches ORDER BY branch ASC");
+        // fetch roles for role select
+        $roles = $conn->query("SELECT id, role_name FROM roles ORDER BY role_name ASC");
     $Departments = $conn->query("SELECT id, department FROM departments ORDER BY department ASC");
     $Positions = $conn->query("SELECT id, position FROM positions ORDER BY position ASC");
     $Levels = $conn->query("SELECT id, level FROM levels ORDER BY level ASC");
@@ -234,6 +280,11 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Mobile No</label>
+                        <input type="text" name="mobile_no" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Birthday</label>
                         <input type="date" name="birthday" class="form-control">
                     </div>
@@ -255,12 +306,96 @@
 
                     <div class="mb-3">
                         <label class="form-label">Role</label>
-                        <select name="role" class="form-select" required>
-                        <option value="">-- Select Role --</option>
-                        <option value="superadmin">Superadmin</option>
-                        <option value="admin">Admin</option>
-                        <option value="user">User</option>
+                        <select name="role_id" class="form-select" required>
+                            <option value="">-- Select Role --</option>
+                            <?php while ($row = $roles->fetch_assoc()): ?>
+                                <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['role_name']) ?></option>
+                            <?php endwhile; ?>
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-select">
+                            <option value="">-- Select Gender --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Civil Status</label>
+                        <select name="civil_status" class="form-select">
+                            <option value="">-- Select Civil Status --</option>
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Divorced">Divorced</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nationality</label>
+                        <input type="text" name="nationality" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Religion</label>
+                        <input type="text" name="religion" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Region</label>
+                        <input type="text" name="region" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Province</label>
+                        <input type="text" name="province" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">City/Municipality</label>
+                        <input type="text" name="city_municipality" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Place of Birth</label>
+                        <input type="text" name="place_of_birth" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Father’s Name</label>
+                        <input type="text" name="father_name" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mother’s Name</label>
+                        <input type="text" name="mother_name" class="form-control">
+                    </div>
+
+                    <hr>
+
+                    <h5>Emergency Contact Information</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Person</label>
+                        <input type="text" name="contact_person" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Relationship</label>
+                        <input type="text" name="contact_person_relationship" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Address</label>
+                        <input type="text" name="contact_person_address" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Number</label>
+                        <input type="text" name="contact_person_contact" class="form-control">
                     </div>
 
                     <div class="mb-3">
@@ -392,7 +527,7 @@
 
                 <!-- ✅ Buttons -->
                 <button type="submit" class="btn btn-success w-100">Add User</button>
-                <a href="users.php" class="btn btn-secondary w-100 mt-2">Back</a>
+                <a href="USERS.php" class="btn btn-secondary w-100 mt-2">Back</a>
                 </form>
                 </div>
             </div>
@@ -405,6 +540,8 @@
             output.src = URL.createObjectURL(event.target.files[0]);
         }
 
+        </script>
+
         <script>
         setTimeout(function() {
             const msg = document.getElementById('successMsg');
@@ -414,8 +551,6 @@
                 setTimeout(() => msg.style.display = 'none', 500); // wait for fade out
             }
         }, 5000);
-        </script>
-
         </script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     </body>  

@@ -1,8 +1,5 @@
 <?php
     require 'db.php';
-    //require 'vendor/autoload.php';
-    use PhpOffice\PhpSpreadsheet\Spreadsheet;
-    use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
     // Get export type
     $type = $_GET['type'] ?? 'csv';
@@ -57,15 +54,17 @@
     }
 
     if ($type === 'excel') {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray(["ID", "Name", "Address", "Contact", "Email", "Username", "Role", "Status", "Profile Pic"], NULL, 'A1');
-        $sheet->fromArray($data, NULL, 'A2');
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="users.xlsx"');
-        $writer = new Xlsx($spreadsheet);
-        $writer->save("php://output");
+        // Export as CSV with Excel-compatible headers
+        header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+        header("Content-Disposition: attachment; filename=users.csv");
+        $out = fopen("php://output", "w");
+        // Add BOM for Excel to recognize UTF-8
+        fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+        fputcsv($out, ["ID", "Name", "Address", "Contact", "Email", "Username", "Role", "Status", "Profile Pic"]);
+        foreach ($data as $row) {
+            fputcsv($out, $row);
+        }
+        fclose($out);
         exit;
     }
 

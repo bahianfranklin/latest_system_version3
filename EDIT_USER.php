@@ -26,16 +26,36 @@
         exit;
     }
 
+    // fetch roles for role combobox
+    $roles = $conn->query("SELECT id, role_name FROM roles ORDER BY role_name ASC");
+
     // ✅ Handle update form submission
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $name = $_POST['name'];
-        $address = $_POST['address'];
-        $contact = $_POST['contact'];
-        $birthday = $_POST['birthday'];
-        $email = $_POST['email'];
-        $username = $_POST['username'];
-        $role = $_POST['role'];
-        $status = $_POST['status'];
+        // collect and normalize POST inputs
+        $name = trim($_POST['name'] ?? '');
+        $gender = trim($_POST['gender'] ?? '');
+        $civil_status = trim($_POST['civil_status'] ?? '');
+        $nationality = trim($_POST['nationality'] ?? '');
+        $religion = trim($_POST['religion'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $region = trim($_POST['region'] ?? '');
+        $province = trim($_POST['province'] ?? '');
+        $city_municipality = trim($_POST['city_municipality'] ?? '');
+        $contact_person = trim($_POST['contact_person'] ?? '');
+        $contact_person_relationship = trim($_POST['contact_person_relationship'] ?? '');
+        $contact_person_address = trim($_POST['contact_person_address'] ?? '');
+        $contact_person_contact = trim($_POST['contact_person_contact'] ?? '');
+        $mother_name = trim($_POST['mother_name'] ?? '');
+        $father_name = trim($_POST['father_name'] ?? '');
+        $contact = trim($_POST['contact'] ?? '');
+        $mobile_no = trim($_POST['mobile_no'] ?? '');
+        $birthday = $_POST['birthday'] ?? null;
+        $place_of_birth = trim($_POST['place_of_birth'] ?? '');
+        $age = isset($_POST['age']) && $_POST['age'] !== '' ? intval($_POST['age']) : null;
+        $email = trim($_POST['email'] ?? '');
+        $username = trim($_POST['username'] ?? '');
+        $status = $_POST['status'] ?? '';
+        $role_id = isset($_POST['role_id']) && $_POST['role_id'] !== '' ? intval($_POST['role_id']) : null;
 
         // Keep old password if empty
         $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_BCRYPT) : $user['password'];
@@ -60,31 +80,59 @@
             }
         }
 
-        // ✅ Update users table
-        $updateStmt = $conn->prepare("UPDATE users 
-            SET name=?, address=?, contact=?, birthday=?, email=?, username=?, role=?, status=?, password=?, profile_pic=? 
+        // fetch role name from roles table (if role_id provided)
+        $role_name = '';
+        if ($role_id) {
+            $rstmt = $conn->prepare("SELECT role_name FROM roles WHERE id = ?");
+            $rstmt->bind_param('i', $role_id);
+            $rstmt->execute();
+            $rres = $rstmt->get_result();
+            $rrow = $rres->fetch_assoc();
+            $role_name = $rrow['role_name'] ?? '';
+            $rstmt->close();
+        }
+
+        $updateStmt = $conn->prepare("UPDATE users SET 
+            name=?, address=?, region=?, province=?, city_municipality=?,
+            contact_person=?, contact_person_relationship=?, contact_person_address=?, contact_person_contact=?, 
+            mother_name=?, father_name=?, contact=?, mobile_no=?, birthday=?, place_of_birth=?, age=?, 
+            email=?, username=?, role=?, role_id=?, status=?, password=?, profile_pic=?,
+            gender=?, civil_status=?, nationality=?, religion=?
             WHERE id=?");
-        $updateStmt->bind_param("ssssssssssi", 
-            $name, $address, $contact, $birthday, $email, $username, $role, $status, $password, $profile_pic, $id
+
+        // 28 parameters: 24 strings (name, address, region, province, city_municipality, contact_person, contact_person_relationship, 
+        // contact_person_address, contact_person_contact, mother_name, father_name, contact, mobile_no, birthday, place_of_birth,
+        // email, username, role_name, status, password, profile_pic, gender, civil_status, nationality, religion),
+        // 2 integers (age, role_id), 1 integer (id)
+        $types = "ssssssssssssssisssissssssssi";
+
+        $updateStmt->bind_param($types,
+            $name, $address, $region, $province, $city_municipality,
+            $contact_person, $contact_person_relationship, $contact_person_address, $contact_person_contact, 
+            $mother_name, $father_name, $contact, $mobile_no, $birthday, $place_of_birth, $age,
+            $email, $username, $role_name, $role_id, $status, $password, $profile_pic,
+            $gender, $civil_status, $nationality, $religion, $id
         );
+
         $updateStmt->execute();
+        $updateStmt->close();
 
         // ✅ Work details fields
-        $employee_no   = $_POST['employee_no'];
-        $bank_account  = $_POST['bank_account_no'];
-        $sss           = $_POST['sss_no'];
-        $philhealth    = $_POST['philhealth_no'];
-        $pagibig       = $_POST['pagibig_no'];
-        $tin           = $_POST['tin_no'];
-        $date_hired    = $_POST['date_hired'];
-        $regularization= $_POST['regularization'];
-        $branch        = $_POST['branch'];
-        $department    = $_POST['department'];
-        $position      = $_POST['position'];
-        $level         = $_POST['level_desc'];
-        $tax           = $_POST['tax_category'];
-        $status_desc   = $_POST['status_desc'];
-        $leave_rule    = $_POST['leave_rule'];
+        $employee_no   = $_POST['employee_no'] ?? '';
+        $bank_account  = $_POST['bank_account_no'] ?? '';
+        $sss           = $_POST['sss_no'] ?? '';
+        $philhealth    = $_POST['philhealth_no'] ?? '';
+        $pagibig       = $_POST['pagibig_no'] ?? '';
+        $tin           = $_POST['tin_no'] ?? '';
+        $date_hired    = $_POST['date_hired'] ?? '';
+        $regularization= $_POST['regularization'] ?? '';
+        $branch        = $_POST['branch'] ?? '';
+        $department    = $_POST['department'] ?? '';
+        $position      = $_POST['position'] ?? '';
+        $level         = $_POST['level_desc'] ?? '';
+        $tax           = $_POST['tax_category'] ?? '';
+        $status_desc   = $_POST['status_desc'] ?? '';
+        $leave_rule    = $_POST['leave_rule'] ?? '';
 
         // ✅ Check if work_details exists
         $checkStmt = $conn->prepare("SELECT user_id FROM work_details WHERE user_id=?");
@@ -164,49 +212,103 @@
 
                             <!-- User Info Tab -->
                             <div class="tab-pane fade show active" id="user">
-                                <div class="mb-3">
-                                    <label class="form-label">Name</label>
-                                    <input type="text" name="name" value="<?= htmlspecialchars($user['name']); ?>" class="form-control" required>
+                                <div class="row">
+                                    <div class="mb-3">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" name="name" value="<?= htmlspecialchars($user['name'] ?? ''); ?>" class="form-control" required>
+                                    </div>
                                 </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Gender</label>
+                                        <select name="gender" class="form-select">
+                                            <option value="">-- Select --</option>
+                                            <option value="Male" <?= (isset($user['gender']) && $user['gender']==='Male')? 'selected':''; ?>>Male</option>
+                                            <option value="Female" <?= (isset($user['gender']) && $user['gender']==='Female')? 'selected':''; ?>>Female</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Civil Status</label>
+                                        <input type="text" name="civil_status" value="<?= htmlspecialchars($user['civil_status'] ?? ''); ?>" class="form-control">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Age</label>
+                                        <input type="number" name="age" value="<?= htmlspecialchars($user['age'] ?? ''); ?>" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nationality</label>
+                                        <input type="text" name="nationality" value="<?= htmlspecialchars($user['nationality'] ?? ''); ?>" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Religion</label>
+                                        <input type="text" name="religion" value="<?= htmlspecialchars($user['religion'] ?? ''); ?>" class="form-control">
+                                    </div>
+                                </div>
+
                                 <div class="mb-3">
                                     <label class="form-label">Address</label>
-                                    <input type="text" name="address" value="<?= htmlspecialchars($user['address']); ?>" class="form-control" required>
+                                    <input type="text" name="address" value="<?= htmlspecialchars($user['address'] ?? ''); ?>" class="form-control">
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Contact</label>
-                                    <input type="text" name="contact" value="<?= htmlspecialchars($user['contact']); ?>" class="form-control" required>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3"><label class="form-label">Region</label><input type="text" name="region" value="<?= htmlspecialchars($user['region'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Province</label><input type="text" name="province" value="<?= htmlspecialchars($user['province'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">City / Municipality</label><input type="text" name="city_municipality" value="<?= htmlspecialchars($user['city_municipality'] ?? ''); ?>" class="form-control"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Birthday</label>
-                                    <input type="date" name="birthday" value="<?= htmlspecialchars($user['birthday']); ?>" class="form-control" required>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3"><label class="form-label">Contact</label><input type="text" name="contact" value="<?= htmlspecialchars($user['contact'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Mobile No.</label><input type="text" name="mobile_no" value="<?= htmlspecialchars($user['mobile_no'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Birthday</label><input type="date" name="birthday" value="<?= htmlspecialchars($user['birthday'] ?? ''); ?>" class="form-control"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" name="email" value="<?= htmlspecialchars($user['email']); ?>" class="form-control" required>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3"><label class="form-label">Place of Birth</label><input type="text" name="place_of_birth" value="<?= htmlspecialchars($user['place_of_birth'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-6 mb-3"><label class="form-label">Email</label><input type="email" name="email" value="<?= htmlspecialchars($user['email'] ?? ''); ?>" class="form-control"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Username</label>
-                                    <input type="text" name="username" value="<?= htmlspecialchars($user['username']); ?>" class="form-control" required>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3"><label class="form-label">Username</label><input type="text" name="username" value="<?= htmlspecialchars($user['username'] ?? ''); ?>" class="form-control" required></div>
+                                    <div class="col-md-6 mb-3"><label class="form-label">Password (leave blank to keep current)</label><input type="password" name="password" class="form-control"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Password (leave blank to keep current)</label>
-                                    <input type="password" name="password" class="form-control">
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Role</label>
+                                        <select name="role_id" class="form-select">
+                                            <option value="">-- Select Role --</option>
+                                            <?php if ($roles): while($r = $roles->fetch_assoc()): ?>
+                                                <option value="<?= $r['id'] ?>" <?= (isset($user['role_id']) && $user['role_id']==$r['id'])? 'selected':''; ?>><?= htmlspecialchars($r['role_name']) ?></option>
+                                            <?php endwhile; endif; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Status</label>
+                                        <select name="status" class="form-select">
+                                            <option value="active" <?= (isset($user['status']) && $user['status']==='active')? 'selected':''; ?>>Active</option>
+                                            <option value="inactive" <?= (isset($user['status']) && $user['status']==='inactive')? 'selected':''; ?>>Inactive</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Role</label>
-                                    <select name="role" class="form-select" required>
-                                        <option <?= $user['role'] === 'superadmin' ? 'selected' : '' ?>>Superadmin</option>
-                                        <option <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                        <option <?= $user['role'] === 'user' ? 'selected' : '' ?>>User</option>
-                                    </select>
+
+                                <hr>
+                                <h6>Emergency Contact</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3"><label class="form-label">Contact Person</label><input type="text" name="contact_person" value="<?= htmlspecialchars($user['contact_person'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-6 mb-3"><label class="form-label">Relationship</label><input type="text" name="contact_person_relationship" value="<?= htmlspecialchars($user['contact_person_relationship'] ?? ''); ?>" class="form-control"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Status</label>
-                                    <select name="status" class="form-select" required>
-                                        <option value="active" <?= $user['status'] === 'active' ? 'selected' : '' ?>>Active</option>
-                                        <option value="inactive" <?= $user['status'] === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                                    </select>
+                                <div class="mb-3"><label class="form-label">Contact Person Address</label><input type="text" name="contact_person_address" value="<?= htmlspecialchars($user['contact_person_address'] ?? ''); ?>" class="form-control"></div>
+                                <div class="mb-3"><label class="form-label">Contact Person Contact No.</label><input type="text" name="contact_person_contact" value="<?= htmlspecialchars($user['contact_person_contact'] ?? ''); ?>" class="form-control"></div>
+
+                                <div class="row mt-3">
+                                    <div class="col-md-6 mb-3"><label class="form-label">Mother's Name</label><input type="text" name="mother_name" value="<?= htmlspecialchars($user['mother_name'] ?? ''); ?>" class="form-control"></div>
+                                    <div class="col-md-6 mb-3"><label class="form-label">Father's Name</label><input type="text" name="father_name" value="<?= htmlspecialchars($user['father_name'] ?? ''); ?>" class="form-control"></div>
                                 </div>
+
                                 <div class="mb-3">
                                     <label class="form-label">Profile Picture</label>
                                     <input type="file" name="profile_pic" class="form-control" onchange="previewImage(event)">

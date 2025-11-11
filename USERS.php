@@ -151,7 +151,7 @@
                             <a href="EDIT_USER.php?id=<?= $row['id'] ?>" class="btn btn-primary btn-sm">
                                 <i class="fa fa-pen"></i>
                             </a>
-                            <a href="delete_user.php?id=<?= $row['id'] ?>" 
+                            <a href="DELETE_USER.php?id=<?= $row['id'] ?>" 
                                 onclick="return confirm('Are you sure you want to delete?\n\nName: <?= $row['name'] ?>\nEmail: <?= $row['email'] ?>\nUsername: <?= $row['username'] ?>');" 
                                 class="btn btn-sm btn-danger">
                                 <i class="fa fa-trash"></i>
@@ -258,7 +258,5 @@
         ?php if (hasAccess($role_id, 'USERS.php', 'delete')): ?>
             <a href="delete_user.php?id=?= $user['id'] ?>" class="btn btn-danger">Delete</a>
         ?php endif; ?> -->
-
-
     </body>
 </html>
