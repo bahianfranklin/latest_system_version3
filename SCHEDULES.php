@@ -103,6 +103,7 @@ if (!$schedules) {
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <form method="POST" action="">
+                                    <input type="hidden" name="schedule_submit" value="1">
                                     <div class="modal-header">
                                         <h5 class="modal-title">Edit Schedule - <?= htmlspecialchars($row['name']) ?></h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

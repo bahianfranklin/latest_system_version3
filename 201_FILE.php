@@ -1,32 +1,49 @@
 <?php
 require 'db.php';
 
+// Detect standalone vs included
+$isStandalone = realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME']);
+
 // 🔹 Handle Upload
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $user_id = $_POST['user_id'];
     $requirement_id = $_POST['requirement_id'];
     $uploaded_by = 'Admin'; // or $_SESSION['username']
 
-    // 🧹 Delete old file if it exists before uploading new one
-    $oldFile = $conn->prepare("SELECT file_path FROM user_requirements WHERE user_id = ? AND requirement_id = ?");
-    $oldFile->bind_param("ii", $user_id, $requirement_id);
-    $oldFile->execute();
-    $oldResult = $oldFile->get_result();
-    if ($oldResult && $oldResult->num_rows > 0) {
-        $oldPath = $oldResult->fetch_assoc()['file_path'];
-        if (file_exists($oldPath)) {
-            unlink($oldPath);
-        }
+  // 🧹 Delete old file if it exists before uploading new one
+  $oldFile = $conn->prepare("SELECT file_path FROM user_requirements WHERE user_id = ? AND requirement_id = ?");
+  $oldFile->bind_param("ii", $user_id, $requirement_id);
+  $oldFile->execute();
+  $oldResult = $oldFile->get_result();
+  if ($oldResult && $oldResult->num_rows > 0) {
+    $oldPath = $oldResult->fetch_assoc()['file_path'];
+    // Convert stored web-relative path to filesystem path before checking/unlinking
+    if (!empty($oldPath)) {
+      $oldPathFs = __DIR__ . DIRECTORY_SEPARATOR . $oldPath;
+      if (file_exists($oldPathFs)) {
+        @unlink($oldPathFs);
+      }
     }
-    $oldFile->close();
+  }
+  $oldFile->close();
 
-    // 🗂 File upload setup
-    $target_dir = "uploads/requirements/$user_id/";
-    if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
+  // 🗂 File upload setup - use filesystem path for move and store web-relative path in DB
+  $target_dir_rel = "uploads/requirements/$user_id/"; // relative (for DB / web)
+  $target_dir_fs = __DIR__ . DIRECTORY_SEPARATOR . $target_dir_rel; // filesystem path
+  if (!file_exists($target_dir_fs)) mkdir($target_dir_fs, 0777, true);
 
-    $file_name = time() . '_' . basename($_FILES["file"]["name"]);
-    $file_path = $target_dir . $file_name;
-    move_uploaded_file($_FILES["file"]["tmp_name"], $file_path);
+  // Validate upload
+  if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+    die('File upload error. Error code: ' . ($_FILES['file']['error'] ?? 'none'));
+  }
+
+  $file_name = time() . '_' . basename($_FILES["file"]["name"]);
+  $file_path_rel = $target_dir_rel . $file_name; // stored in DB
+  $file_path_fs = $target_dir_fs . $file_name; // where to move on server
+
+  if (!move_uploaded_file($_FILES["file"]["tmp_name"], $file_path_fs)) {
+    die('Failed to move uploaded file. Check permissions on uploads/ directory.');
+  }
 
     // 💾 Insert or update record
     $stmt = $conn->prepare("
@@ -38,15 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             uploaded_by = VALUES(uploaded_by)
     ");
     if ($stmt) {
-        $stmt->bind_param("iiss", $user_id, $requirement_id, $file_path, $uploaded_by);
+    $stmt->bind_param("iiss", $user_id, $requirement_id, $file_path_rel, $uploaded_by);
         $stmt->execute();
         $stmt->close();
     } else {
         die("Prepare failed: " . $conn->error);
     }
 
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
+  // After processing, return to the maintenance hub's 201 files tab so the UI stays in context
+    header("Location: USER_MAINTENANCE.php?maintenanceTabs=201_files");
+  exit;
 }
 
 // 🔹 Fetch all users
@@ -137,11 +155,11 @@ function getRequirements($conn) {
 <!-- 🔹 Upload Modal -->
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
-    <form method="POST" enctype="multipart/form-data">
+  <form method="POST" enctype="multipart/form-data" action="201_FILE.php">
       <div class="modal-content">
         <div class="modal-header bg-primary text-white">
           <h5 class="modal-title">Upload User Requirement</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" name="user_id" id="modal_user_id">
@@ -173,17 +191,4 @@ function getRequirements($conn) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-document.querySelectorAll('.upload-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.getElementById('modal_user_id').value = this.dataset.userid;
-    document.getElementById('modal_requirement_id').value = this.dataset.reqid || '';
-    const filename = this.dataset.filename;
-    const currentFile = document.getElementById('current_file');
-    currentFile.textContent = filename ? "Current file: " + filename : "";
-  });
-});
-</script>
-
-</body>
-</html>
+<!-- Note: JS for upload button is delegated in USER_MAINTENANCE.php when this file is lazy-loaded -->

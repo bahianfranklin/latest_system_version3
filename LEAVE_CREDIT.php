@@ -124,7 +124,8 @@
         if ($isStandalone) {
             header("Location: leave_credit.php");
         } else {
-            header("Location: USER_MAINTENANCE.php?tab=leave_credit");
+            // use maintenanceTabs for the new maintenance loader
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=leave_credit");
         }
         exit;
     }
@@ -140,7 +141,7 @@
         if ($isStandalone) {
             header("Location: leave_credit.php");
         } else {
-            header("Location: USER_MAINTENANCE.php?tab=leave_credit");
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=leave_credit");
         }
         exit;
 
@@ -243,7 +244,7 @@
         <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-            <form method="post" action="<?= $isStandalone ? 'leave_credit.php' : 'USER_MAINTENANCE.php?tab=leave_credit' ?>">
+            <form method="post" action="<?= $isStandalone ? 'leave_credit.php' : 'USER_MAINTENANCE.php?maintenanceTabs=leave_credit' ?>">
                 <div class="modal-header">
                 <h5 class="modal-title"><i class="fa fa-edit"></i> Edit Leave Credits</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -281,7 +282,7 @@
         <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-            <form method="post" action="<?= $isStandalone ? 'leave_credit.php' : 'USER_MAINTENANCE.php?tab=leave_credit' ?>">
+            <form method="post" action="<?= $isStandalone ? 'leave_credit.php' : 'USER_MAINTENANCE.php?maintenanceTabs=leave_credit' ?>">
                 <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title"><i class="fa fa-trash"></i> Confirm Delete</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

@@ -17,7 +17,8 @@
 
             if ($count > 0) {
                 // 🚫 Already has an approver
-                header("Location: USER_MAINTENANCE.php?error=department_exists");
+                // Ensure we return to the maintenance tab and show the error
+                header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=department_exists");
                 exit();
             }
 
@@ -35,7 +36,8 @@
                 $stmt->execute();
             }
         }
-        header("Location: USER_MAINTENANCE.php?tab=approver_maintenance");
+        // Redirect back to the maintenance hub's approver tab
+        header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
         exit();
     }
 
@@ -59,7 +61,8 @@
             $stmt->execute();
         }
 
-        header("Location: USER_MAINTENANCE.php?tab=approver_maintenance");
+        // Redirect back to the maintenance hub's approver tab
+        header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
         exit();
     }
 
@@ -70,7 +73,8 @@
         $stmt->bind_param("i", $id);
         $stmt->execute();
 
-        header("Location: USER_MAINTENANCE.php?tab=approver_maintenance");
+        // Redirect back to the maintenance hub's approver tab
+        header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
         exit();
     }
 
@@ -101,7 +105,7 @@
         <div class="container mt-4">
             <h5>Approver Assignment</h5>
             <br>
-            <form method="POST" action="">
+            <form method="POST" action="APPROVER_MAINTENANCE.php">
                 <input type="hidden" name="action" value="insert">
 
                 <!--Display departments with approver and do not have -->

@@ -11,6 +11,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
     $stmt = $conn->prepare("INSERT INTO user_salary_rates (user_id, monthly_rate) VALUES (?, ?)");
     $stmt->bind_param("id", $user_id, $monthly_rate);
     $stmt->execute();
+    // After handling, return to the maintenance tab so the UI stays in context
+    header("Location: USER_MAINTENANCE.php?maintenanceTabs=salary_rate");
+    exit;
 }
 
 // 🔹 Update Salary
@@ -21,6 +24,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'update') {
     $stmt = $conn->prepare("UPDATE user_salary_rates SET monthly_rate = ? WHERE id = ?");
     $stmt->bind_param("di", $monthly_rate, $id);
     $stmt->execute();
+    // After handling, return to the maintenance tab so the UI stays in context
+    header("Location: USER_MAINTENANCE.php?maintenanceTabs=salary_rate");
+    exit;
 }
 
 // 🔹 Delete Salary
@@ -29,6 +35,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
     $stmt = $conn->prepare("DELETE FROM user_salary_rates WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
+    // After handling, return to the maintenance tab so the UI stays in context
+    header("Location: USER_MAINTENANCE.php?maintenanceTabs=salary_rate");
+    exit;
 }
 
 // ==================== FETCH DATA ====================
@@ -87,7 +96,7 @@ $salaryQuery = $conn->query("
             <div class="modal fade" id="editSalaryModal<?= $row['id'] ?>" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form method="POST">
+                        <form method="POST" action="SALARY_RATE.php">
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?= $row['id'] ?>">
                             <div class="modal-header">
@@ -113,7 +122,7 @@ $salaryQuery = $conn->query("
             <div class="modal fade" id="deleteSalaryModal<?= $row['id'] ?>" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form method="POST">
+                        <form method="POST" action="SALARY_RATE.php">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $row['id'] ?>">
                             <div class="modal-header">
@@ -140,7 +149,7 @@ $salaryQuery = $conn->query("
 <div class="modal fade" id="addSalaryModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST">
+            <form method="POST" action="SALARY_RATE.php">
                 <input type="hidden" name="action" value="add">
                 <div class="modal-header">
                     <h5 class="modal-title">Add Salary</h5>
