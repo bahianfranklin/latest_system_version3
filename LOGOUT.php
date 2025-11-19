@@ -1,7 +1,14 @@
 <?php
-
     session_start();
     require 'db.php'; // this defines $conn, not $pdo
+
+    // audit helper (defines logAction)
+    if (file_exists(__DIR__ . '/AUDIT.php')) {
+        require_once __DIR__ . '/AUDIT.php';
+    }
+
+    // Initialize error variable to avoid "undefined" warnings
+    $error = "";
 
     if (isset($_SESSION['log_id'])) {
         $log_id = $_SESSION['log_id'];
@@ -17,6 +24,9 @@
     /* Handle submit BEFORE any HTML */
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['confirm']) && $_POST['confirm'] === 'yes') {
+            // Capture the user id before destroying session (avoid undefined/string issues)
+            $logoutUserId = $_SESSION['user_id'] ?? null;
+
             // Kill all session data
             $_SESSION = [];
             if (ini_get('session.use_cookies')) {
@@ -24,6 +34,17 @@
                 setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
             }
             session_destroy();
+
+            // Audit trail (before redirect)
+            if (function_exists('logAction')) {
+                if (!is_null($logoutUserId)) {
+                    logAction($conn, $logoutUserId, "LOGOUT", "User logged out");
+                } else {
+                    error_log('Logout: user id not available for audit');
+                }
+            } else {
+                error_log('logAction() not available — AUDIT.php not included');
+            }
 
             header('Location: login.php');
             exit;

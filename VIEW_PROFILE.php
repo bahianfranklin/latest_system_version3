@@ -2,7 +2,18 @@
 require 'db.php';
 session_start();
 
+// audit helper (defines logAction)
+if (file_exists(__DIR__ . '/AUDIT.php')) {
+  require_once __DIR__ . '/AUDIT.php';
+}
+
 $user_id = $_SESSION['user_id'] ?? 1;
+
+// Debug: Check if user_id is set
+if (empty($_SESSION['user_id'])) {
+    // Optionally redirect to login or show a message
+    // For now, we'll continue with user_id = 1 (default)
+}
 
 // ---------- USERS TABLE ----------
 $userQuery = $conn->prepare("SELECT * FROM users WHERE id = ?");
@@ -13,6 +24,11 @@ $userQuery->bind_param("i", $user_id);
 $userQuery->execute();
 $userResult = $userQuery->get_result();
 $user = $userResult->fetch_assoc();
+
+// Debug: If no user found, show error
+if (!$user) {
+    die("Error: User ID " . intval($user_id) . " not found in the database. Please check your session or log in again.");
+}
 
 // ---------- WORK DETAILS ----------
 $workQuery = $conn->prepare("SELECT * FROM work_details WHERE user_id = ?");
@@ -65,10 +81,13 @@ $salaryQuery->execute();
 $salaryResult = $salaryQuery->get_result();
 $salary = $salaryResult->fetch_assoc();
 
+logAction($conn, $user_id, "PRINT PROFILE", "User printed his full profile data");
+
 ?>
 
 <?php include __DIR__ . '/layout/HEADER'; ?>
 <?php include __DIR__ . '/layout/NAVIGATION'; ?>
+
 <div id="layoutSidenav_content">
   <main>
     <div class="container-fluid px-4">
@@ -136,48 +155,48 @@ $salary = $salaryResult->fetch_assoc();
 
         <div class="tab-pane fade show active" id="personal" role="tabpanel">
           <table class="table table-bordered">
-            <tr><th>Employee ID</th><td><?= $work['employee_no'] ?></td></tr>
-            <tr><th>Full Name</th><td><?= $user['full_name'] ?? $user['name'] ?></td></tr>
-            <tr><th>Gender</th><td><?= $user['gender'] ?></td></tr>
-            <tr><th>Civil Status</th><td><?= $user['civil_status'] ?></td></tr>
-            <tr><th>Nationality</th><td><?= $user['nationality'] ?></td></tr>
-            <tr><th>Religion</th><td><?= $user['religion'] ?></td></tr>
-            <tr><th>Date of Birth</th><td><?= $user['birthday'] ?></td></tr>
-            <tr><th>Place of Birth</th><td><?= $user['place_of_birth'] ?></td></tr>
-            <tr><th>Age</th><td><?= $user['age'] ?></td></tr>
-            <tr><th>Mobile No.</th><td><?= $user['mobile_no'] ?></td></tr>
-            <tr><th>Contact</th><td><?= $user['contact'] ?></td></tr>
-            <tr><th>Email Address</th><td><?= $user['email'] ?></td></tr>
-            <tr><th>Address</th><td><?= $user['address'] ?></td></tr>
-            <tr><th>Region</th><td><?= $user['region'] ?></td></tr>
-            <tr><th>Province</th><td><?= $user['province'] ?></td></tr>
-            <tr><th>City/Municipality</th><td><?= $user['city_municipality'] ?></td></tr>
-            <tr><th>Contact Person</th><td><?= $user['contact_person'] ?></td></tr>
-            <tr><th>Relationship</th><td><?= $user['contact_person_relationship'] ?></td></tr>
-            <tr><th>Contact Person Address</th><td><?= $user['contact_person_address'] ?></td></tr>
-            <tr><th>Contact Person Contact No.</th><td><?= $user['contact_person_contact'] ?></td></tr>
-            <tr><th>Mother's Name</th><td><?= $user['mother_name'] ?></td></tr>
-            <tr><th>Father's Name</th><td><?= $user['father_name'] ?></td></tr>
-            <tr><th>Status</th><td><?= ucfirst($user['status']) ?></td></tr>
+            <tr><th>Employee ID</th><td><?= htmlspecialchars($work['employee_no'] ?? '') ?></td></tr>
+            <tr><th>Full Name</th><td><?= htmlspecialchars($user['full_name'] ?? $user['name'] ?? '') ?></td></tr>
+            <tr><th>Gender</th><td><?= htmlspecialchars($user['gender'] ?? '') ?></td></tr>
+            <tr><th>Civil Status</th><td><?= htmlspecialchars($user['civil_status'] ?? '') ?></td></tr>
+            <tr><th>Nationality</th><td><?= htmlspecialchars($user['nationality'] ?? '') ?></td></tr>
+            <tr><th>Religion</th><td><?= htmlspecialchars($user['religion'] ?? '') ?></td></tr>
+            <tr><th>Date of Birth</th><td><?= htmlspecialchars($user['birthday'] ?? '') ?></td></tr>
+            <tr><th>Place of Birth</th><td><?= htmlspecialchars($user['place_of_birth'] ?? '') ?></td></tr>
+            <tr><th>Age</th><td><?= htmlspecialchars($user['age'] ?? '') ?></td></tr>
+            <tr><th>Mobile No.</th><td><?= htmlspecialchars($user['mobile_no'] ?? '') ?></td></tr>
+            <tr><th>Contact</th><td><?= htmlspecialchars($user['contact'] ?? '') ?></td></tr>
+            <tr><th>Email Address</th><td><?= htmlspecialchars($user['email'] ?? '') ?></td></tr>
+            <tr><th>Address</th><td><?= htmlspecialchars($user['address'] ?? '') ?></td></tr>
+            <tr><th>Region</th><td><?= htmlspecialchars($user['region'] ?? '') ?></td></tr>
+            <tr><th>Province</th><td><?= htmlspecialchars($user['province'] ?? '') ?></td></tr>
+            <tr><th>City/Municipality</th><td><?= htmlspecialchars($user['city_municipality'] ?? '') ?></td></tr>
+            <tr><th>Contact Person</th><td><?= htmlspecialchars($user['contact_person'] ?? '') ?></td></tr>
+            <tr><th>Relationship</th><td><?= htmlspecialchars($user['contact_person_relationship'] ?? '') ?></td></tr>
+            <tr><th>Contact Person Address</th><td><?= htmlspecialchars($user['contact_person_address'] ?? '') ?></td></tr>
+            <tr><th>Contact Person Contact No.</th><td><?= htmlspecialchars($user['contact_person_contact'] ?? '') ?></td></tr>
+            <tr><th>Mother's Name</th><td><?= htmlspecialchars($user['mother_name'] ?? '') ?></td></tr>
+            <tr><th>Father's Name</th><td><?= htmlspecialchars($user['father_name'] ?? '') ?></td></tr>
+            <tr><th>Status</th><td><?= htmlspecialchars(ucfirst($user['status'] ?? '')) ?></td></tr>
           </table>
         </div>
 
         <div class="tab-pane fade" id="work" role="tabpanel">
           <table class="table table-bordered">
-            <tr><th>Bank Account No.</th><td><?= $work['bank_account_no'] ?></td></tr>
-            <tr><th>SSS No.</th><td><?= $work['sss_no'] ?></td></tr>
-            <tr><th>PhilHealth No.</th><td><?= $work['philhealth_no'] ?></td></tr>
-            <tr><th>PAG-IBIG No.</th><td><?= $work['pagibig_no'] ?></td></tr>
-            <tr><th>TIN No.</th><td><?= $work['tin_no'] ?></td></tr>
-            <tr><th>Date Hired</th><td><?= $work['date_hired'] ?></td></tr>
-            <tr><th>Regularization Date</th><td><?= $work['regularization'] ?></td></tr>
-            <tr><th>Branch</th><td><?= $work['branch'] ?></td></tr>
-            <tr><th>Department</th><td><?= $work['department'] ?></td></tr>
-            <tr><th>Position</th><td><?= $work['position'] ?></td></tr>
-            <tr><th>Level</th><td><?= $work['level_desc'] ?></td></tr>
-            <tr><th>Tax Category</th><td><?= $work['tax_category'] ?></td></tr>
-            <tr><th>Status</th><td><?= $work['status_desc'] ?></td></tr>
-            <tr><th>Leave Rule</th><td><?= $work['leave_rule'] ?></td></tr>
+            <tr><th>Bank Account No.</th><td><?= htmlspecialchars($work['bank_account_no'] ?? '') ?></td></tr>
+            <tr><th>SSS No.</th><td><?= htmlspecialchars($work['sss_no'] ?? '') ?></td></tr>
+            <tr><th>PhilHealth No.</th><td><?= htmlspecialchars($work['philhealth_no'] ?? '') ?></td></tr>
+            <tr><th>PAG-IBIG No.</th><td><?= htmlspecialchars($work['pagibig_no'] ?? '') ?></td></tr>
+            <tr><th>TIN No.</th><td><?= htmlspecialchars($work['tin_no'] ?? '') ?></td></tr>
+            <tr><th>Date Hired</th><td><?= htmlspecialchars($work['date_hired'] ?? '') ?></td></tr>
+            <tr><th>Regularization Date</th><td><?= htmlspecialchars($work['regularization'] ?? '') ?></td></tr>
+            <tr><th>Branch</th><td><?= htmlspecialchars($work['branch'] ?? '') ?></td></tr>
+            <tr><th>Department</th><td><?= htmlspecialchars($work['department'] ?? '') ?></td></tr>
+            <tr><th>Position</th><td><?= htmlspecialchars($work['position'] ?? '') ?></td></tr>
+            <tr><th>Level</th><td><?= htmlspecialchars($work['level_desc'] ?? '') ?></td></tr>
+            <tr><th>Tax Category</th><td><?= htmlspecialchars($work['tax_category'] ?? '') ?></td></tr>
+            <tr><th>Status</th><td><?= htmlspecialchars($work['status_desc'] ?? '') ?></td></tr>
+            <tr><th>Leave Rule</th><td><?= htmlspecialchars($work['leave_rule'] ?? '') ?></td></tr>
           </table>
         </div>
         </br>

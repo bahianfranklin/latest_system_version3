@@ -1,38 +1,48 @@
 <?php
-    // Start session only if not already started
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!ob_get_level()) {
+    ob_start();
+}
+
+require_once __DIR__ . '/../db.php';
+
+// Check login based on user_id (more reliable)
+if (!isset($_SESSION['user_id'])) {
+    header("Location: LOGIN.php");
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
+
+// Always load fresh user data
+$stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+
+if (!$user) {
+    header("Location: LOGIN.php");
+    exit();
+}
+
+// Approver function
+if (!function_exists('isApprover')) {
+    function isApprover($conn, $user_id) {
+        $sql = "SELECT 1 FROM approver_assignments WHERE user_id = ? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $stmt->store_result();
+        return $stmt->num_rows > 0;
     }
+}
 
-    // Ensure output buffering is active so headers/redirects won't fail after HTML output
-    if (!ob_get_level()) {
-        ob_start();
-    }
-
-    // Load DB using a reliable path relative to this layout file
-    require_once __DIR__ . '/../db.php';
-
-    if (!isset($_SESSION['user'])) {
-        header("Location: LOGIN.php");
-        exit();
-    }
-
-    $user = $_SESSION['user'];
-    $user_id = $_SESSION['user_id'] ?? 1;
-
-    // ✅ Approver check - define only if not already defined elsewhere
-    if (!function_exists('isApprover')) {
-        function isApprover($conn, $user_id) {
-            $sql = "SELECT 1 FROM approver_assignments WHERE user_id = ? LIMIT 1";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("i", $user_id);
-            $stmt->execute();
-            $stmt->store_result();
-            return $stmt->num_rows > 0;
-        }
-    }
-    $approver = isApprover($conn, $user_id);
+$approver = isApprover($conn, $user_id);
 ?>
+
 <!DOCTYPE html>
     <html lang="en">
         <head>

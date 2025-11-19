@@ -10,14 +10,23 @@
 
     // ✅ Assume logged-in user
     $user_id = $_SESSION['user_id'] ?? 1; // change if needed
+    $sessionUser = $_SESSION['user'] ?? null;
 
     // ✅ Get Leave Balance
     $leave_sql = "SELECT mandatory, vacation_leave, sick_leave FROM leave_credits WHERE user_id = ?";
-    $stmt = $conn->prepare($leave_sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $leave = $result->fetch_assoc();
+    $leave = ['mandatory' => 0, 'vacation_leave' => 0, 'sick_leave' => 0];
+    if ($stmt = $conn->prepare($leave_sql)) {
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result) {
+            $f = $result->fetch_assoc();
+            if ($f) $leave = $f;
+        }
+        $stmt->close();
+    } else {
+        error_log("leave_sql prepare failed: " . $conn->error);
+    }
 
     // ✅ Get Events
     $today = date("Y-m-d");
@@ -72,26 +81,132 @@
     ";
 
     // ✅ Run the query safely
-    $stmt = $conn->prepare($sql);
-    if ($stmt) {
+    $timesLate = 0;
+    $totalLate = "00:00:00";
+    if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("iii", $user_id, $month, $year);
         $stmt->execute();
         $result = $stmt->get_result();
-        $tardiness = $result->fetch_assoc();
-
-        // ✅ Handle null values gracefully
-        $timesLate = $tardiness['times_late'] ?? 0;
-        $totalLate = $tardiness['total_late'] ?? "00:00:00";
-        if ($totalLate === null || $totalLate === '') {
-            $totalLate = "00:00:00";
+        if ($result) {
+            $tardiness = $result->fetch_assoc();
+            $timesLate = $tardiness['times_late'] ?? 0;
+            $totalLate = $tardiness['total_late'] ?? "00:00:00";
+            if ($totalLate === null || $totalLate === '') {
+                $totalLate = "00:00:00";
+            }
         }
-
         $stmt->close();
     } else {
-        $timesLate = 0;
-        $totalLate = "00:00:00";
         error_log("Tardiness SQL failed: " . $conn->error);
     }
+
+    // User's Pending Leave Requests
+    $sqlUserPendingLeave = "SELECT COUNT(*) AS pending FROM leave_requests WHERE user_id = ? AND status = 'Pending'";
+    $userPendingLeave = 0;
+    if ($stmtLP = $conn->prepare($sqlUserPendingLeave)) {
+        $stmtLP->bind_param("i", $user_id);
+        $stmtLP->execute();
+        $res = $stmtLP->get_result();
+        $userPendingLeave = $res->fetch_assoc()['pending'] ?? 0;
+        $stmtLP->close();
+    } else {
+        error_log("prepare failed (pending leave): " . $conn->error);
+    }
+
+    // User's Pending Overtime Requests
+    $sqlUserPendingOvertime = "SELECT COUNT(*) AS pending FROM overtime WHERE user_id = ? AND status = 'Pending'";
+    $userPendingOvertime = 0;
+    if ($stmtOP = $conn->prepare($sqlUserPendingOvertime)) {
+        $stmtOP->bind_param("i", $user_id);
+        $stmtOP->execute();
+        $userPendingOvertime = $stmtOP->get_result()->fetch_assoc()['pending'] ?? 0;
+        $stmtOP->close();
+    } else {
+        error_log("prepare failed (pending overtime): " . $conn->error);
+    }
+
+    // User's Pending Official Business Requests
+    $sqlUserPendingOfficial_Business = "SELECT COUNT(*) AS pending FROM official_business WHERE user_id = ? AND status = 'Pending'";
+    $userPendingOfficial_Business = 0;
+    if ($stmtOBP = $conn->prepare($sqlUserPendingOfficial_Business)) {
+        $stmtOBP->bind_param("i", $user_id);
+        $stmtOBP->execute();
+        $userPendingOfficial_Business = $stmtOBP->get_result()->fetch_assoc()['pending'] ?? 0;
+        $stmtOBP->close();
+    } else {
+        error_log("prepare failed (pending official business): " . $conn->error);
+    }
+
+    // User's Pending Change Schedule Requests
+    $sqlUserPendingChange_Schedule = "SELECT COUNT(*) AS pending FROM change_schedule WHERE user_id = ? AND status = 'Pending'";
+    $userPendingChange_Schedule = 0;
+    if ($stmtCSP = $conn->prepare($sqlUserPendingChange_Schedule)) {
+        $stmtCSP->bind_param("i", $user_id);
+        $stmtCSP->execute();
+        $userPendingChange_Schedule = $stmtCSP->get_result()->fetch_assoc()['pending'] ?? 0;
+        $stmtCSP->close();
+    } else {
+        error_log("prepare failed (pending change schedule): " . $conn->error);
+    }
+
+    // User's Pending Failure Clock Requests
+    $sqlUserPendingFailure_Clock = "SELECT COUNT(*) AS pending FROM failure_clock WHERE user_id = ? AND status = 'Pending'";
+    $userPendingFailure_Clock = 0;
+    if ($stmtFCP = $conn->prepare($sqlUserPendingFailure_Clock)) {
+        $stmtFCP->bind_param("i", $user_id);
+        $stmtFCP->execute();
+        $userPendingFailure_Clock = $stmtFCP->get_result()->fetch_assoc()['pending'] ?? 0;
+        $stmtFCP->close();
+    } else {
+        error_log("prepare failed (pending failure clock): " . $conn->error);
+    }
+
+    // User's Pending Clock Alteration Requests
+    $sqlUserPendingClock_Alteration = "SELECT COUNT(*) AS pending FROM clock_alteration WHERE user_id = ? AND status = 'Pending'";
+    $userPendingClock_Alteration = 0;
+    if ($stmtCAP = $conn->prepare($sqlUserPendingClock_Alteration)) {
+        $stmtCAP->bind_param("i", $user_id);
+        $stmtCAP->execute();
+        $userPendingClock_Alteration = $stmtCAP->get_result()->fetch_assoc()['pending'] ?? 0;
+        $stmtCAP->close();
+    } else {
+        error_log("prepare failed (pending clock alteration): " . $conn->error);
+    }
+
+    // User's Pending Work Restday Requests
+    $sqlUserPendingWork_Restday = "SELECT COUNT(*) AS pending FROM work_restday WHERE user_id = ? AND status = 'Pending'";
+    $userPendingWork_Restday = 0;
+    if ($stmtWRP = $conn->prepare($sqlUserPendingWork_Restday)) {
+        $stmtWRP->bind_param("i", $user_id);
+        $stmtWRP->execute();
+        $userPendingWork_Restday = $stmtWRP->get_result()->fetch_assoc()['pending'] ?? 0;
+        $stmtWRP->close();
+    } else {
+        error_log("prepare failed (pending work restday): " . $conn->error);
+    }
+
+    // Check if user did NOT logout today
+    $noLogout = 0;
+    $sqlNoLogout = "
+        SELECT COUNT(*) AS no_logout 
+        FROM attendance_logs 
+        WHERE user_id = ? 
+        AND log_date = CURDATE() 
+        AND login_time IS NOT NULL 
+        AND logout_time IS NULL
+    ";
+    $noLogout = 0;
+    if ($stmtNL = $conn->prepare($sqlNoLogout)) {
+        $stmtNL->bind_param("i", $user_id);
+        $stmtNL->execute();
+        $resNL = $stmtNL->get_result();
+        $rowNL = $resNL->fetch_assoc();
+        $noLogout = $rowNL['no_logout'] ?? 0;
+        $stmtNL->close();
+    } else {
+        error_log("prepare failed (no logout): " . $conn->error);
+    }
+
 ?>
 
 <?php include __DIR__ . '/layout/HEADER'; ?>
@@ -106,7 +221,7 @@
                 <div class="card p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h3 class="mb-0">
-                            Welcome, <?= htmlspecialchars($user['name']); ?> 👋
+                            Welcome, <?= htmlspecialchars($sessionUser['name'] ?? ($user['name'] ?? 'User')); ?> 👋
                         </h3>
                         <h5 class="text-muted mb-0"><?= date('l, F j, Y'); ?></h5>
                     </div>
@@ -253,10 +368,82 @@
                     </div>
                 </div>
 
+                <!-- Users Pending Leaves and No Logout -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card mb-3">
+
+                        <!-- Pending Requests -->
+                        <div class="card-header bg-info text-white">User Pending Requests</div>
+                        <div class="card-body">
+
+                            <!-- One row per request -->
+                            <a href="LEAVE_APPLICATION.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Leave Requests</span>
+                                    <span class="fw-bold text-primary"><?= $userPendingLeave ?></span>
+                                </div>
+
+                            <a href="OVERTIME.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Overtime Requests</span>
+                                    <span class="fw-bold text-primary"><?= $userPendingOvertime ?></span>
+                                </div>
+                            </a>
+
+                            <a href="OFFICIAL_BUSINESS.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Official Business Requests</span>
+                                    <span class="fw-bold text-primary"><?= $userPendingOfficial_Business ?></span>
+                                </div>
+                            </a>
+                            
+                            <a href="CHANGE_SCHEDULE.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Change Schedule Requests</span>
+                                    <span class="fw-bold text-primary"><?= htmlspecialchars($userPendingChange_Schedule) ?></span>
+                                </div>
+                            </a>
+
+                            <a href="FAILURE_CLOCK.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Failure to Clock In/Out</span>
+                                    <span class="fw-bold text-primary"><?= $userPendingFailure_Clock ?></span>
+                                </div>
+                            </a>
+
+                            <a href="CLOCK_ALTERATION.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Clock Alteration Requests</span>
+                                    <span class="fw-bold text-primary"><?= $userPendingClock_Alteration ?></span>
+                                </div>
+                            </a>
+
+                            <a href="WORK_RESTDAY.php" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Pending Work Restday Requests</span>
+                                    <span class="fw-bold text-primary"><?= $userPendingWork_Restday ?></span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <!-- No Logout -->
+                        <div class="card-header bg-danger text-white">No Logout Today</div>
+                        <div class="card-body text-center">
+                            <?php if ($noLogout > 0): ?>
+                                <h3 class="fw-bold text-danger"><?= $noLogout ?></h3>
+                                <p class="text-muted">You forgot to logout today.</p>
+                                <a href="failure_clock.php" class="btn btn-sm btn-outline-danger">Submit Failure to Logout</a>
+                            <?php else: ?>
+                                <h5 class="text-success">✔ You are logged out today.</h5>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
                 <?php if ($approver): ?>
                     <div class="col-12">
                         <div class="card mb-3">
-                            <div class="card-header bg-danger text-white">Pending</div>
+                            <div class="card-header bg-danger text-white">Approver's Pending</div>
                             <div class="card-body">
                                 <div class="dropdown-item p-2 mb-2 border-bottom">
                                     <a href="pending_leaves.php" class="d-flex align-items-center text-decoration-none text-dark">

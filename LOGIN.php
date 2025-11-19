@@ -1,6 +1,10 @@
 <?php
     session_start();
     require 'db.php';
+    // audit helper (defines logAction)
+    if (file_exists(__DIR__ . '/AUDIT.php')) {
+        require_once __DIR__ . '/AUDIT.php';
+    }
 
     // Initialize error variable to avoid "undefined" warnings
     $error = "";
@@ -38,6 +42,13 @@
                     $stmtLog->execute();
 
                     $_SESSION['log_id'] = $conn->insert_id;
+
+                    // Audit trail (before redirect)
+                    if (function_exists('logAction')) {
+                        logAction($conn, $user['id'], "LOGIN", "User logged in");
+                    } else {
+                        error_log('logAction() not available — AUDIT.php not included');
+                    }
 
                     // Redirect to dashboard
                     header("Location: INDEX.php");
