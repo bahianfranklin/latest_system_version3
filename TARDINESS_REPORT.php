@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'db.php'; // ✅ Your database connection
+require 'audit.php';
 
 // // Set timeout duration (e.g., 30 minutes)
 // $timeout_duration = 1800;
@@ -26,7 +27,26 @@ $groupedData = [];
 $totals = []; // ✅ for total lates and minutes
 
 if ($selected_period_id > 0) {
+
     $user_id = $_SESSION['user']['id']; // or adjust based on your session structure
+
+    // 🔹 Fetch selected period details
+    $periodStmt = $conn->prepare("SELECT period_code, start_date, end_date FROM payroll_periods WHERE id = ?");
+    $periodStmt->bind_param("i", $selected_period_id);
+    $periodStmt->execute();
+    $period = $periodStmt->get_result()->fetch_assoc();
+
+    $period_code = $period['period_code'];
+    $start_date = $period['start_date'];
+    $end_date = $period['end_date'];
+
+    // 🔥 Audit log now works — correct user_id + correct period data
+    logAction(
+        $conn,
+        $user_id,
+        "TARDINESS REPORT",
+        "Viewed tardiness report for period $period_code ($start_date to $end_date)"
+    );
 
     $sql = "
         SELECT 
@@ -78,6 +98,7 @@ if ($selected_period_id > 0) {
         $groupedData[$empName][] = $row;
         $totals[$empName]['total_lates']++;
         $totals[$empName]['total_minutes'] += (int)$row['tardy_minutes'];
+
     }
 }
 ?>

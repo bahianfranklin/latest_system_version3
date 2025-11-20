@@ -148,6 +148,7 @@ $reports_active = in_array($current_page, $reports_pages);
                             <a class="nav-link <?= ($current_page == 'TARDINESS_REPORT.PHP') ? 'active' : '' ?>" href="TARDINESS_REPORT.PHP">Tardiness</a>
                             <a class="nav-link <?= ($current_page == 'LEAVE_CREDIT_MONITORING_1.PHP') ? 'active' : '' ?>" href="LEAVE_CREDIT_MONITORING_1.PHP">Leave Credit Monitoring</a>
                             <a class="nav-link <?= ($current_page == 'LEAVE_TRANSACTION.PHP') ? 'active' : '' ?>" href="LEAVE_TRANSACTION.PHP">Leave Transaction</a>
+                            <a class="nav-link <?= ($current_page == 'VIEW_LOGS.PHP') ? 'active' : '' ?>" href="VIEW_LOGS.PHP">Audit Trail</a>
                         </nav>
                     </div>
 

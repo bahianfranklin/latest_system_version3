@@ -7,6 +7,28 @@
     $role = isset($_GET['role']) && $_GET['role'] !== '' ? $_GET['role'] : null;
     $departmentFilter = isset($_GET['department']) && $_GET['department'] !== '' ? $_GET['department'] : null;
 
+    // 🔧 Audit Trail Function
+    function logAction($conn, $user_id, $action, $description = null) {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+        $agent = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
+
+        $sql = "INSERT INTO audit_logs (user_id, action, description, ip_address, user_agent, created_at) 
+                VALUES (?, ?, ?, ?, ?, NOW())";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("issss", $user_id, $action, $description, $ip, $agent);
+        $stmt->execute();
+    }
+
+    // Define variables for audit logging
+    $searchText = isset($_GET['search']) ? $_GET['search'] : '';
+    $roleText = isset($_GET['role']) ? $_GET['role'] : 'All';
+    $deptText = isset($_GET['department']) ? $_GET['department'] : 'All';
+
+    $userId = $_SESSION['user_id'] ?? 0;
+
+    $details  = "Search: {$searchText}; Role Filter: {$roleText}; Department Filter: {$deptText}";
+    logAction($conn, $userId, "Directory Search", $details);
+
     // 🗃️ Get list of departments for dropdown
     $deptResult = $conn->query("SELECT DISTINCT department FROM work_details ORDER BY department ASC");
     $departments = [];

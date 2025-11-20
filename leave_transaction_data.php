@@ -1,4 +1,32 @@
 <?php
+session_start();
+require 'db.php';
+require 'audit.php';
+
+if (!isset($_SESSION['user'])) {
+    echo json_encode([]);
+    exit();
+}
+
+$user_id = $_SESSION['user']['id'];
+
+$year   = $_GET['year'] ?? '';
+$type   = $_GET['type'] ?? '';
+$search = $_GET['search'] ?? '';
+
+// Build description for audit logs
+$desc = "Filters -> Year: " . ($year !== "" ? $year : "All") .
+        ", Type: " . ($type !== "" ? $type : "All") .
+        ", Search: " . ($search !== "" ? $search : "None");
+
+// 🔥 Audit log entry
+logAction(
+    $conn,
+    $user_id,
+    "FILTER LEAVE TRANSACTIONS",
+    $desc
+);
+
 header('Content-Type: application/json');
 
 // Ensure session is available and user is authenticated

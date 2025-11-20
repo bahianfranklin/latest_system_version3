@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'db.php';
+require 'audit.php'; // ⭐ add this
 
 if (!isset($_SESSION['user'])) {
     header("Location: LOGIN.php");
@@ -11,6 +12,14 @@ $user_id = $_SESSION['user']['id'];
 $currentYear = date('Y');
 $years = [$currentYear, $currentYear + 1];
 $selectedYear = isset($_GET['year']) ? (int)$_GET['year'] : $currentYear;
+
+// ⭐⭐⭐ AUDIT TRAIL — logs once per page view ⭐⭐⭐
+logAction(
+    $conn,
+    $user_id,
+    "LEAVE CREDIT MONITORING",
+    "Viewed leave credit monitoring report for year $selectedYear"
+);
 
 // ---------------------------------------------------
 // 1️⃣ Define leave types

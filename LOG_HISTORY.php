@@ -1,6 +1,7 @@
 <?php
     session_start();
     require 'db.php';  
+    require 'audit.php';
 
     if (!isset($_SESSION['user'])) {
         header("Location: LOGIN.php");
@@ -14,6 +15,24 @@
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
     $from = isset($_GET['from']) ? trim($_GET['from']) : '';
     $to = isset($_GET['to']) ? trim($_GET['to']) : '';
+
+    // --- AUDIT TRAIL FOR SEARCH ---
+    if (isset($_GET['search']) || isset($_GET['from']) || isset($_GET['to'])) {
+
+        $desc = "Search filters used: ";
+
+        if ($search !== '') {
+            $desc .= "Keyword = '$search'; ";
+        }
+        if ($from !== '') {
+            $desc .= "From = $from; ";
+        }
+        if ($to !== '') {
+            $desc .= "To = $to; ";
+        }
+
+        logAction($conn, $user_id, "Log History Search", $desc);
+    }
 
     // Base SQL
     $sql = "SELECT l.id, u.name AS fullname, u.username, l.login_time, l.logout_time, l.ip_address

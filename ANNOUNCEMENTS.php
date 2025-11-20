@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'db.php';
+require 'audit.php';
 
 // ✅ Ensure only logged in users
 if (!isset($_SESSION['user'])) {
@@ -17,6 +18,10 @@ if (isset($_POST['add'])) {
     $stmt = $conn->prepare("INSERT INTO announcements (title, description, created_by) VALUES (?, ?, ?)");
     $stmt->bind_param("ssi", $title, $description, $user_id);
     $stmt->execute();
+
+    // 🔥 AUDIT TRAIL
+    logAction($conn, $user_id, "ADD ANNOUNCEMENT", "Added: $title");
+
     header("Location: announcements.php");
     exit();
 }
@@ -29,6 +34,10 @@ if (isset($_POST['update'])) {
     $stmt = $conn->prepare("UPDATE announcements SET title=?, description=?, updated_at=NOW(), updated_by=? WHERE id=?");
     $stmt->bind_param("ssii", $title, $description, $user_id, $id);
     $stmt->execute();
+
+    // 🔥 AUDIT TRAIL
+    logAction($conn, $user_id, "EDIT ANNOUNCEMENT", "Updated ID $id: $title");
+
     header("Location: announcements.php");
     exit();
 }
@@ -39,6 +48,10 @@ if (isset($_GET['delete'])) {
     $stmt = $conn->prepare("DELETE FROM announcements WHERE id=?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
+
+    // 🔥 AUDIT TRAIL
+    logAction($conn, $user_id, "DELETE ANNOUNCEMENT", "Deleted ID $id: $title");
+
     header("Location: announcements.php");
     exit();
 }
@@ -47,6 +60,10 @@ if (isset($_GET['delete'])) {
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 if ($search !== '') {
+
+    // 🔥 AUDIT TRAIL
+    logAction($conn, $user_id, "SEARCH ANNOUNCEMENT", "Keyword: $search");
+
     $sql = "
         SELECT a.*, 
             u1.name AS created_name, 

@@ -8,6 +8,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require 'db.php';
+require 'audit.php';
 
 // ✅ Redirect if not logged in
 if (!isset($_SESSION['user'])) {
@@ -50,6 +51,14 @@ if (isset($_GET['period_id']) && !empty($_GET['period_id'])) {
     if ($period) {
         $start_date = $period['start_date'];
         $end_date = $period['end_date'];
+
+        // 🔥 AUDIT TRAIL
+        logAction(
+            $conn,
+            $user_id,
+            "VIEW TIMECARD",
+            "Viewed timecard for period $start_date to $end_date"
+        );
 
         // ✅ Fetch attendance logs
         $sql = "SELECT * FROM attendance_logs 

@@ -1,6 +1,22 @@
 <?php
     session_start();
     require 'db.php';
+    require 'audit.php';
+
+    if (!isset($_SESSION['user'])) {
+        header("Location: LOGIN.php");
+        exit();
+    }
+
+    $user_id = $_SESSION['user']['id'];
+
+    // Log viewing the calendar page
+    logAction(
+        $conn,
+        $user_id,
+        "VIEW CALENDAR",
+        "Opened company calendar page"
+    );
 
     $success = "";
     $error = "";
@@ -19,6 +35,13 @@
         if ($stmt) {
             $stmt->bind_param("ssssss", $event_type, $title, $date, $location, $description, $visibility);
             if ($stmt->execute()) {
+                logAction(
+                    $conn,
+                    $user_id,
+                    "ADD CALENDAR EVENT",
+                    "Event Type: $event_type, Title: $title, Date: $date"
+                );
+
                 $success = "✅ Event added successfully!";
                 header("Location: CALENDAR.php?success=1");
                 exit();
@@ -52,6 +75,13 @@
             $stmt->bind_param("ssssssi", $event_type, $title, $date, $location, $description, $visibility, $id);
             if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                logAction(
+                    $conn,
+                    $user_id,
+                    "UPDATE CALENDAR EVENT",
+                    "ID: $id, Event Type: $event_type, Title: $title, Date: $date"
+                );
+
                 $success = "✅ Event updated successfully!";
                 header("Location: CALENDAR.php?success=1");
                 exit();
@@ -76,6 +106,13 @@
         if ($stmt) {
             $stmt->bind_param("i", $id);
             if ($stmt->execute()) {
+                logAction(
+                    $conn,
+                    $user_id,
+                    "DELETE CALENDAR EVENT",
+                    "Deleted Event ID: $id"
+                );
+
                 if (isset($_POST['action'])) {
                     echo json_encode(["status" => "success"]);
                     exit;
@@ -93,6 +130,7 @@
             $error = "❌ SQL Prepare failed: " . $conn->error;
         }
     }
+
 ?>
     <?php include __DIR__ . '/layout/HEADER'; ?>
     <?php include __DIR__ . '/layout/NAVIGATION'; ?>
