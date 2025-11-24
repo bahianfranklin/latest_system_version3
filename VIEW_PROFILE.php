@@ -1,5 +1,6 @@
 <?php
 require 'db.php';
+require 'autolock.php';
 session_start();
 
 // audit helper (defines logAction)

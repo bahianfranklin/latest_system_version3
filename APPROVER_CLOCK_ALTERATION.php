@@ -1,6 +1,7 @@
 <?php
     session_start();
     require 'db.php';
+    require 'autolock.php';
 
     $approver_id = $_SESSION['user_id'] ?? null;
     if (!$approver_id) {

@@ -1,5 +1,6 @@
 <?php 
     require 'db.php';
+    require 'autolock.php';
 
     ob_start();                // ✅ Start output buffering
     if (session_status() === PHP_SESSION_NONE) {

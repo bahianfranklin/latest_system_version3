@@ -1,6 +1,7 @@
 <?php
     session_start();
     require 'db.php';
+    require 'autolock.php';
 
     // ✅ Fetch all active users (optional: only show active)
     $search = isset($_GET['search']) ? '%' . $_GET['search'] . '%' : '%';

@@ -2,6 +2,7 @@
 session_start();
 require 'db.php'; // ✅ Your database connection
 require 'audit.php';
+require 'autolock.php';
 
 // // Set timeout duration (e.g., 30 minutes)
 // $timeout_duration = 1800;

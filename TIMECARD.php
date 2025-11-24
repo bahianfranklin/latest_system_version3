@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 
 require 'db.php';
 require 'audit.php';
+require 'autolock.php';
 
 // ✅ Redirect if not logged in
 if (!isset($_SESSION['user'])) {

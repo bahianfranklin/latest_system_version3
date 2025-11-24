@@ -10,6 +10,7 @@
 
     session_start();
     require 'db.php';
+    require 'autolock.php';
 
     // ✅ Ensure logged in
     if (!isset($_SESSION['user_id'])) {

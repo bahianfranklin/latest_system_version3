@@ -1,5 +1,6 @@
 <?php
     require 'db.php';
+    require 'autolock.php';
 
     // Ensure $activeTab has a default to avoid undefined variable warnings
     // Accept both new ?maintenanceTabs= and legacy ?tab= for backward compatibility

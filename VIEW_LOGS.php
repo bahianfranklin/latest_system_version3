@@ -1,8 +1,8 @@
 <?php
-
     session_start();
     require 'db.php';
     require 'audit.php';
+    require 'autolock.php';
 
     // --- FILTER INPUTS ---
     $search = $_GET['search'] ?? '';

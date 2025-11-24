@@ -2,6 +2,7 @@
     session_start();
     require 'db.php';  
     require 'audit.php';
+    require 'autolock.php';
 
     if (!isset($_SESSION['user'])) {
         header("Location: LOGIN.php");

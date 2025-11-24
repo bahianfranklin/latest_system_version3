@@ -94,7 +94,7 @@ $approver = isApprover($conn, $user_id);
 
                         <li><hr class="dropdown-divider" /></li>
                         <li><a class="dropdown-item" href="EDIT_USER_PROFILE.php?id=<?= $user['id'] ?>">Edit Profile</a></li>
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
+                        <li><a class="dropdown-item" href="SAVE_AUTOLOCK.php">Settings</a></li>
                         <li><a class="dropdown-item" href="LOCK.PHP">Lock Screen</a></li>
                         <li><hr class="dropdown-divider" /></li>
                         <li><a class="dropdown-item" href="LOGOUT.php">Logout</a></li>
