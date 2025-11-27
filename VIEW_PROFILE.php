@@ -83,7 +83,7 @@ $salaryQuery->execute();
 $salaryResult = $salaryQuery->get_result();
 $salary = $salaryResult->fetch_assoc();
 
-logAction($conn, $user_id, "PRINT PROFILE", "User printed his full profile data");
+logAction($conn, $user_id, "VIEW PROFILE", "User view his full profile data");
 
 ?>
 
@@ -126,7 +126,7 @@ logAction($conn, $user_id, "PRINT PROFILE", "User printed his full profile data"
         <hr>
 
         <div class="d-flex justify-content-end mt-2 gap-2">
-          <button class="btn btn-secondary btn-sm" onclick="window.print()">
+          <button class="btn btn-secondary btn-sm" onclick="printAllData()">
             <i class="fas fa-print me-1"></i> Print All Data
           </button>
           
@@ -432,6 +432,18 @@ document.getElementById("changePasswordForm").addEventListener("submit", functio
 });
 </script>
 
+<script>
+function printAllData() {
+    // Log audit trail via AJAX
+    fetch("log_print_audit.php", {
+        method: "POST"
+    });
+
+    // Trigger browser print
+    window.print();
+}
+</script>
+
 <style>
 @media print {
   body * {
@@ -451,4 +463,3 @@ document.getElementById("changePasswordForm").addEventListener("submit", functio
   }
 }
 </style>
-
