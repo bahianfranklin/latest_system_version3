@@ -1,6 +1,8 @@
 <?php
 session_start();
 require 'db.php';
+require 'autolock.php';
+require 'audit.php';
 
 // Read current settings to prefill the form
 $current = ['autolock_status' => 'OFF', 'minutes' => 0];
@@ -18,6 +20,14 @@ if ($sel) {
 
 $error = null;
 $success = null;
+
+$status = $current['autolock_status'];
+$minutes = (int)$current['minutes'];
+
+// Show success message if redirected
+if (isset($_GET['success'])) {
+    $success = 'Settings updated!';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status  = ($_POST['autolock_status'] ?? 'OFF') === 'ON' ? 'ON' : 'OFF';
@@ -38,6 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param('si', $status, $minutes);
             if ($stmt->execute()) {
                 $stmt->close();
+
+                // Record audit trail for successful update
+                $user_id = $_SESSION['user_id'] ?? 0;
+                $details = "Auto-Lock Status: $status | Minutes: $minutes";
+                logAction($conn, $user_id, "UPDATED SYSTEM AUTO-LOCK", $details);
+
                 // Redirect to avoid resubmit and show success message
                 header('Location: save_autolock.php?success=1');
                 exit;
@@ -47,10 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+}
     // If not redirected, update $current so form shows submitted values
     $current['autolock_status'] = $status;
     $current['minutes'] = $minutes;
-}
 ?>
 
 <!DOCTYPE html>
@@ -69,7 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <h5>System Auto-Lock Settings</h5>
             <hr>
-
+            <P>Enable/Disabled system autolock. This is recommended to enable in order to secure your confidential data in case your account was left open.</P>
+            <br>
             <?php if ($error): ?>
                 <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
@@ -94,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Minutes textbox -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Enter No. of Minutes:</label>
-                <input type="number" name="minutes" class="form-control" placeholder="Enter minutes…" min="1" value="<?= htmlspecialchars($current['minutes']) ?>">
+                <input type="number" name="minutes" id="minutesField" class="form-control" placeholder="Enter minutes…" min="1" value="<?= htmlspecialchars($current['minutes']) ?>">
             </div>
 
             <!-- Save Button -->
@@ -102,6 +119,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="INDEX.PHP" class="btn btn-secondary">Back</a>
 
         </form>
+
+        <!-- Auto-Lock OFF Confirmation Modal -->
+        <div class="modal fade" id="confirmOffModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Turn Off Auto-Lock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    Are you sure you want to turn OFF the Auto-Lock feature?
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelOff">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmOff">Yes, Turn Off</button>
+                </div>
+
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     </body>
     
     <script>
@@ -109,6 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const onRadio = document.getElementById("on");
             const offRadio = document.getElementById("off");
             const minutesField = document.getElementById("minutesField");
+
+            // Bootstrap modal instance
+            const modal = new bootstrap.Modal(document.getElementById('confirmOffModal'));
 
             function applyState() {
                 if (offRadio.checked) {
@@ -122,17 +166,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // When OFF is clicked → show modal
             offRadio.addEventListener("change", function () {
-                let confirmOff = confirm("Are you sure you want to turn OFF Auto-Lock?");
-                if (confirmOff) {
-                    minutesField.value = 0;
-                    minutesField.disabled = true;
-                } else {
-                    onRadio.checked = true;
-                    applyState();
-                }
+                modal.show();
             });
 
+            // Cancel button → go back to ON
+            document.getElementById('cancelOff').addEventListener("click", function () {
+                onRadio.checked = true;
+                applyState();
+                modal.hide();
+            });
+
+            // Confirm OFF → apply disabled state
+            document.getElementById('confirmOff').addEventListener("click", function () {
+                minutesField.value = 0;
+                minutesField.disabled = true;
+                modal.hide();
+            });
+
+            // When ON is clicked
             onRadio.addEventListener("change", function () {
                 minutesField.disabled = false;
             });
@@ -141,4 +194,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     </script>
 </html>
-

@@ -4,6 +4,7 @@
     session_start();
     require 'db.php';
     require 'autolock.php';
+    require 'audit.php';
 
     if (!isset($_SESSION['user_id'])) {
         die("Please login first.");
@@ -55,6 +56,10 @@
         $stmt->bind_param("ssssssi", $appNo, $date, $type, $time_in, $time_out, $reason, $user_id);
         $stmt->execute();
 
+        // 🔥 AUDIT TRAIL
+        $details = "AppNo: $appNo | Date: $date | Type: $type | Time In: $time_in | Time Out: $time_out | Reason: $reason";
+        logAction($conn, $user_id, "ADD FAILURE CLOCK", $details);
+
         echo "<script>
                 alert('Application submitted successfully!');
                 window.location.href = '".$_SERVER['PHP_SELF']."';
@@ -93,6 +98,10 @@
         $stmt->bind_param("sssssii", $date, $type, $time_in, $time_out, $reason, $id, $user_id);
         $stmt->execute();
 
+        // 🔥 AUDIT TRAIL
+        $details = "ID: $id | Date: $date | Type: $type | Time In: $time_in | Time Out: $time_out | Reason: $reason";
+        logAction($conn, $user_id, "EDIT FAILURE CLOCK", $details);
+
         echo "<script>
                 alert('Record updated successfully!');
                 window.location.href = '".$_SERVER['PHP_SELF']."';
@@ -105,6 +114,9 @@
         $stmt = $conn->prepare("DELETE FROM failure_clock WHERE id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+
+    // 🔥 AUDIT TRAIL
+    logAction($conn, $user_id, "DELETE FAILURE CLOCK", $details);
     }
 
     /** ========== FETCH ========= */
@@ -112,7 +124,7 @@
 
     // Date Range Filter
     if (!empty($_GET['date_range'])) {
-        $dates = explode(" to ", $_GET['date_range']);
+        $dates = preg_split("/\s*to\s*/", $_GET['date_range']);
         if (count($dates) == 2 && !empty($dates[0]) && !empty($dates[1])) {
             $from = date("Y-m-d", strtotime($dates[0]));
             $to   = date("Y-m-d", strtotime($dates[1]));
@@ -136,94 +148,102 @@
 
     $result = $conn->query($sql);
 
+    // 🔥 AUDIT TRAIL FOR FILTER
+    $filter_details = "Filters: ";
+    $filter_details .= !empty($_GET['date_range']) ? "Date Range: {$_GET['date_range']}; " : "";
+    $filter_details .= !empty($_GET['status']) ? "Status: {$_GET['status']}; " : "";
+    if ($filter_details == "Filters: ") $filter_details .= "None";
+    logAction($conn, $user_id, "FILTER FAILURE CLOCK", $filter_details);
+
     // Get the start (Monday) and end (Sunday) of the current week
     $monday = date('Y-m-d', strtotime('monday this week'));
     $sunday = date('Y-m-d', strtotime('sunday this week'));
     $today = date('Y-m-d');
 ?>
-        <?php include __DIR__ . '/layout/HEADER'; ?>
-        <?php include __DIR__ . '/layout/NAVIGATION'; ?>
+        
+<?php include __DIR__ . '/layout/HEADER'; ?>
+<?php include __DIR__ . '/layout/NAVIGATION'; ?>
 
-        <div id="layoutSidenav_content">
-        <main class="container-fluid px-4">
-            <br>
-            <div class="d-flex justify-content-between mb-3">
-                <h3>Failure to Clock In/Out</h3>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">+ Apply Failure Clock</button>
-            </div>
+{<div id="layoutSidenav_content">
+    <main class="container-fluid px-4">
+        <br>
+        <div class="d-flex justify-content-between mb-3">
+            <h3>Failure to Clock In/Out</h3>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">+ Apply Failure Clock</button>
+        </div>
 
-            <div class="card mb-3 p-3">
-                <form method="GET" class="row g-2">
-                    <div class="col-md-4">
-                        <input type="text" name="date_range" class="form-control dateRangePicker" 
-                            placeholder="Select Date Range" value="<?= $_GET['date_range'] ?? '' ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <select name="status" class="form-select">
-                            <option value="">All Status</option>
-                            <option value="Pending" <?= ($_GET['status'] ?? '')=="Pending"?"selected":"" ?>>Pending</option>
-                            <option value="Approved" <?= ($_GET['status'] ?? '')=="Approved"?"selected":"" ?>>Approved</option>
-                            <option value="Rejected" <?= ($_GET['status'] ?? '')=="Rejected"?"selected":"" ?>>Rejected</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary w-100">Filter</button>
-                    </div>
-                </form>
-            </div>
+        <div class="card mb-3 p-3">
+            <form method="GET" class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" name="date_range" class="form-control dateRangePicker" 
+                        placeholder="Select Date Range" value="<?= $_GET['date_range'] ?? '' ?>">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="Pending" <?= ($_GET['status'] ?? '')=="Pending"?"selected":"" ?>>Pending</option>
+                        <option value="Approved" <?= ($_GET['status'] ?? '')=="Approved"?"selected":"" ?>>Approved</option>
+                        <option value="Rejected" <?= ($_GET['status'] ?? '')=="Rejected"?"selected":"" ?>>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
 
-            <table class="table table-bordered table-hover bg-white">
-                <thead class="table-dark">
-                    <tr>
-                        <th>#</th>
-                        <th>Application No</th>
-                        <th>User</th>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Reason</th>
-                        <th>Status</th>
-                        <th>Applied At</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-            <?php $i=1; while($row=$result->fetch_assoc()): ?>
-                <?php
-                    // Format times
-                    $timeIn  = $row['time_in']  ? date("h:i A", strtotime($row['time_in'])) : "-";
-                    $timeOut = $row['time_out'] ? date("h:i A", strtotime($row['time_out'])) : "-";
-
-                    // Format applied datetime
-                    $appliedAt = date("M d, Y h:i A", strtotime($row['datetime_applied']));
-
-                    // Status badge
-                    $statusClass = "secondary";
-                    if ($row['status'] == "Pending")  $statusClass = "warning";
-                    if ($row['status'] == "Approved") $statusClass = "success";
-                    if ($row['status'] == "Rejected") $statusClass = "danger";
-                ?>
+        <table class="table table-bordered table-hover bg-white">
+            <thead class="table-dark">
                 <tr>
-                    <td><?= $i++ ?></td>
-                    <td><?= $row['application_no'] ?></td>
-                    <td><?= $row['username'] ?></td>
-                    <td><?= $row['date'] ?></td>
-                    <td><?= $row['type'] ?></td>
-                    <td><?= $timeIn ?></td>
-                    <td><?= $timeOut ?></td>
-                    <td><?= $row['reason'] ?></td>
-                    <td><span class="badge bg-<?= $statusClass ?>"><?= $row['status'] ?></span></td>
-                    <td><?= $appliedAt ?></td>
-                    <td>
-                        <?php if ($row['status'] === 'Pending'): ?>
-                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id'] ?>">Edit</button>
-                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal<?= $row['id'] ?>">Delete</button>
-                        <?php else: ?>
-                            <span class="text-muted">WITH UPDATED STATUS</span>
-                        <?php endif; ?>
-                    </td>
+                    <th>#</th>
+                    <th>Application No</th>
+                    <th>User</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Time In</th>
+                    <th>Time Out</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Applied At</th>
+                    <th>Actions</th>
                 </tr>
+            </thead>
+            <tbody>
+                <?php $i=1; while($row=$result->fetch_assoc()): ?>
+                    <?php
+                        // Format times
+                        $timeIn  = $row['time_in']  ? date("h:i A", strtotime($row['time_in'])) : "-";
+                        $timeOut = $row['time_out'] ? date("h:i A", strtotime($row['time_out'])) : "-";
+
+                        // Format applied datetime
+                        $appliedAt = date("M d, Y h:i A", strtotime($row['datetime_applied']));
+
+                        // Status badge
+                        $statusClass = "secondary";
+                        if ($row['status'] == "Pending")  $statusClass = "warning";
+                        if ($row['status'] == "Approved") $statusClass = "success";
+                        if ($row['status'] == "Rejected") $statusClass = "danger";
+                    ?>
+                    <tr>
+                        <td><?= $i++ ?></td>
+                        <td><?= $row['application_no'] ?></td>
+                        <td><?= $row['username'] ?></td>
+                        <td><?= $row['date'] ?></td>
+                        <td><?= $row['type'] ?></td>
+                        <td><?= $timeIn ?></td>
+                        <td><?= $timeOut ?></td>
+                        <td><?= $row['reason'] ?></td>
+                        <td><span class="badge bg-<?= $statusClass ?>"><?= $row['status'] ?></span></td>
+                        <td><?= $appliedAt ?></td>
+                        <td>
+                            <?php if ($row['status'] === 'Pending'): ?>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id'] ?>">Edit</button>
+                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal<?= $row['id'] ?>">Delete</button>
+                            <?php else: ?>
+                                <span class="text-muted">WITH UPDATED STATUS</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
                     <!-- Edit Modal -->
                     <div class="modal fade" id="editModal<?= $row['id'] ?>" tabindex="-1">
                         <div class="modal-dialog">
@@ -296,124 +316,123 @@
                         </div>
                     </div>
                 <?php endwhile; ?>
-                </tbody>
-            </table>
-            </main>
-            <?php include __DIR__ . '/layout/FOOTER'; ?>
-        </div>
-    </div>
+            </tbody>
+        </table>
+    </main>
+    <?php include __DIR__ . '/layout/FOOTER'; ?>
+</div>
 
-        <!-- Add Modal -->
-        <div class="modal fade" id="addModal" tabindex="-1">
-            <div class="modal-dialog">
-                <form method="POST">
-                    <input type="hidden" name="action" value="add">
-                    <div class="modal-content">
-                        <div class="modal-header bg-success text-white">
-                            <h5 class="modal-title">Apply Failure Clock</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <label>Date</label>
-                            <input type="date" 
-                                name="date" 
-                                class="form-control mb-2" 
-                                required
-                                min="<?= $monday ?>" 
-                                max="<?= min($today, $sunday) ?>">
-                            <label>Type</label>
-                            <select name="type" class="form-select mb-2" id="typeSelectAdd">
-                                <option value="Clock-In & Out">Clock-In & Out</option>
-                                <option value="Clock-Out">Clock-Out</option>
-                            </select>
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST">
+            <input type="hidden" name="action" value="add">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Apply Failure Clock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label>Date</label>
+                    <input type="date" 
+                        name="date" 
+                        class="form-control mb-2" 
+                        required
+                        min="<?= $monday ?>" 
+                        max="<?= min($today, $sunday) ?>">
+                    <label>Type</label>
+                    <select name="type" class="form-select mb-2" id="typeSelectAdd">
+                        <option value="Clock-In & Out">Clock-In & Out</option>
+                        <option value="Clock-Out">Clock-Out</option>
+                    </select>
 
-                            <label>Time In</label>
-                            <input type="time" name="time_in" id="timeInAdd" class="form-control mb-2">
+                    <label>Time In</label>
+                    <input type="time" name="time_in" id="timeInAdd" class="form-control mb-2">
 
-                            <label>Time Out</label>
-                            <input type="time" name="time_out" id="timeOutAdd" class="form-control mb-2">
+                    <label>Time Out</label>
+                    <input type="time" name="time_out" id="timeOutAdd" class="form-control mb-2">
 
-                            <label>Reason</label>
-                            <textarea name="reason" class="form-control mb-2" required></textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-success">Submit</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </form>
+                    <label>Reason</label>
+                    <textarea name="reason" class="form-control mb-2" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Submit</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
-        </div>
+        </form>
+    </div>
+</div>
 
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                flatpickr(".dateRangePicker", {
-                    mode: "range",
-                    dateFormat: "Y-m-d",
-                    onChange: function (selectedDates, dateStr, instance) {
-                        // optionally, if you want to fill hidden inputs or something
-                    }
-                });
-            });
-        </script>
-
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const body = document.body;
-                const sidebarToggle = document.querySelector("#sidebarToggle");
-
-                if (sidebarToggle) {
-                    sidebarToggle.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    body.classList.toggle("sb-sidenav-toggled");
-                    });
-                }
-            });
-        </script>
-
-        <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const typeSelectAdd = document.getElementById("typeSelectAdd");
-            const timeInAdd = document.getElementById("timeInAdd");
-
-            // Function to toggle time_in field based on type
-            function toggleTimeIn() {
-                if (typeSelectAdd.value === "Clock-Out") {
-                    timeInAdd.disabled = true;
-                    timeInAdd.value = ""; // clear input if disabled
-                } else {
-                    timeInAdd.disabled = false;
-                }
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        flatpickr(".dateRangePicker", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            onChange: function (selectedDates, dateStr, instance) {
+                // optionally, if you want to fill hidden inputs or something
             }
-
-            // Initialize and bind event listener
-            toggleTimeIn();
-            typeSelectAdd.addEventListener("change", toggleTimeIn);
         });
-        </script>
+    });
+</script>
 
-        <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Loop through all edit modals
-            document.querySelectorAll("[id^='typeSelect']").forEach(function(select) {
-                const id = select.id.replace("typeSelect", "");
-                const timeInField = document.getElementById("timeIn" + id);
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const body = document.body;
+        const sidebarToggle = document.querySelector("#sidebarToggle");
 
-                function toggleTimeInEdit() {
-                    if (select.value === "Clock-Out") {
-                        timeInField.disabled = true;
-                        timeInField.value = "";
-                    } else {
-                        timeInField.disabled = false;
-                    }
-                }
-
-                toggleTimeInEdit();
-                select.addEventListener("change", toggleTimeInEdit);
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener("click", function (e) {
+            e.preventDefault();
+            body.classList.toggle("sb-sidenav-toggled");
             });
-        });
-        </script>
+        }
+    });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const typeSelectAdd = document.getElementById("typeSelectAdd");
+    const timeInAdd = document.getElementById("timeInAdd");
+
+    // Function to toggle time_in field based on type
+    function toggleTimeIn() {
+        if (typeSelectAdd.value === "Clock-Out") {
+            timeInAdd.disabled = true;
+            timeInAdd.value = ""; // clear input if disabled
+        } else {
+            timeInAdd.disabled = false;
+        }
+    }
+
+    // Initialize and bind event listener
+    toggleTimeIn();
+    typeSelectAdd.addEventListener("change", toggleTimeIn);
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Loop through all edit modals
+    document.querySelectorAll("[id^='typeSelect']").forEach(function(select) {
+        const id = select.id.replace("typeSelect", "");
+        const timeInField = document.getElementById("timeIn" + id);
+
+        function toggleTimeInEdit() {
+            if (select.value === "Clock-Out") {
+                timeInField.disabled = true;
+                timeInField.value = "";
+            } else {
+                timeInField.disabled = false;
+            }
+        }
+
+        toggleTimeInEdit();
+        select.addEventListener("change", toggleTimeInEdit);
+    });
+});
+</script>
 

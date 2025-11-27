@@ -6,6 +6,10 @@ if (!isset($_SESSION['locked_user_id'])) {
 }
 
 require 'db.php';
+// audit helper (defines logAction)
+if (file_exists(__DIR__ . '/AUDIT.php')) {
+    require_once __DIR__ . '/AUDIT.php';
+}
 
 $userId = $_SESSION['locked_user_id'];
 // Fetch user info including profile image
@@ -19,7 +23,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Use existing $user['password']
     if ($user && password_verify($password, $user['password'])) {
         unset($_SESSION['locked_user_id']);
+        // restore session user id; the application expects both user_id and user in session
         $_SESSION['user_id'] = $userId;
+        // optional: set minimal $_SESSION['user'] if username is available
+        if (isset($user['username'])) {
+            $_SESSION['user'] = [
+                'id' => $userId,
+                'username' => $user['username']
+            ];
+        }
+
+        // 🔥 AUDIT TRAIL — record who unlocked the session
+        $details = isset($user['username']) ? "Unlocked session for {$user['username']}" : "Unlocked session for user_id={$userId}";
+        if (function_exists('logAction')) {
+            logAction($conn, $userId, "LOCKSCREEN", $details);
+        } else {
+            error_log('LOCKSCREEN: logAction() not available');
+        }
         header("Location: index.php");
         exit;
     } else {

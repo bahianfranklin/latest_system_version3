@@ -2,6 +2,7 @@
     session_start();
     require 'db.php';
     require 'autolock.php';
+    require 'audit.php';
 
     $approver_id = $_SESSION['user_id'] ?? null;
     if (!$approver_id) {
@@ -99,7 +100,6 @@
     $countResult = $stmtCount->get_result();
     $countRow = $countResult->fetch_assoc();
     $pendingCount = $countRow['pending_count'];
-
 ?>
         <?php include __DIR__ . '/layout/HEADER'; ?>
         <?php include __DIR__ . '/layout/NAVIGATION'; ?>

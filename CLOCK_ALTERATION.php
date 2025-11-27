@@ -2,6 +2,7 @@
     session_start();
     require 'db.php';
     require 'autolock.php';
+    require 'audit.php';
 
     // 🚫 Ensure user is logged in
     if (!isset($_SESSION['user_id'])) {
@@ -34,6 +35,11 @@
                 $date_new, $time_in_new, $time_out_new, $reason, $user_id);
 
         $stmt->execute();
+
+         // 🟢 AUDIT: ADD
+        $details = "AppNo: $appNo | Original: $date_original ($time_in_original - $time_out_original) | ".
+                "New: $date_new ($time_in_new - $time_out_new) | Reason: $reason";
+        logAction($conn, $user_id, "ADD CLOCK ALTERATION", $details);
     }
 
     /** ========== EDIT ========= */
@@ -48,20 +54,52 @@
         $reason            = $_POST['reason'];
         $status            = $_POST['status'];
 
+        // 🔵 Fetch OLD data (required for audit)
+        $old = $conn->query("SELECT * FROM clock_alteration WHERE id=$id")->fetch_assoc();
+
+        // 🔵 Perform update
         $stmt = $conn->prepare("UPDATE clock_alteration 
-            SET date_original=?, time_in_original=?, time_out_original=?, date_new=?, time_in_new=?, time_out_new=?, reason=?, status=?, datetime_updated=NOW() 
+            SET date_original=?, time_in_original=?, time_out_original=?, 
+                date_new=?, time_in_new=?, time_out_new=?, 
+                reason=?, status=?, datetime_updated=NOW() 
             WHERE id=?");
-        $stmt->bind_param("ssssssssi", $date_original, $time_in_original, $time_out_original,
-                        $date_new, $time_in_new, $time_out_new, $reason, $status, $id);
+        $stmt->bind_param("ssssssssi",
+            $date_original, $time_in_original, $time_out_original,
+            $date_new, $time_in_new, $time_out_new,
+            $reason, $status, $id
+        );
         $stmt->execute();
+
+        // 🔵 AUDIT LOGGING
+        $details = 
+            "ID: $id | ".
+            "Old: {$old['date_original']} ({$old['time_in_original']} - {$old['time_out_original']}) ".
+            "→ New: $date_original ($time_in_original - $time_out_original); ".
+            "New Schedule: $date_new ($time_in_new - $time_out_new); ".
+            "Status: $status | Reason: $reason";
+
+        logAction($conn, $user_id, "EDIT CLOCK ALTERATION", $details);
     }
 
     /** ========== DELETE ========= */
-    if (isset($_POST['action']) && $_POST['action'] === 'delete') {
+        if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         $id = $_POST['id'];
+
+        // Fetch before delete
+        $row = $conn->query("SELECT * FROM clock_alteration WHERE id=$id")->fetch_assoc();
+
+        $details = "AppNo: {$row['application_no']} | ".
+                "Original: {$row['date_original']} ({$row['time_in_original']} - {$row['time_out_original']}) | ".
+                "New: {$row['date_new']} ({$row['time_in_new']} - {$row['time_out_new']}) | ".
+                "Reason: {$row['reason']}";
+
+        // Delete now
         $stmt = $conn->prepare("DELETE FROM clock_alteration WHERE id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+
+        // 🟢 AUDIT: DELETE
+        logAction($conn, $user_id, "DELETE CLOCK ALTERATION", $details);
     }
 
     /** ========== FETCH ========= */
@@ -104,6 +142,12 @@
     $stmt->execute();
     $result = $stmt->get_result();
 
+    // 🟢 AUDIT: FILTER
+    $filter_details = "Filters → ";
+    $filter_details .= $date_range ? "Date Range: $date_range; " : "";
+    $filter_details .= $status ? "Status: $status; " : "All Status";
+
+    logAction($conn, $user_id, "FILTER CLOCK ALTERATION", $filter_details);
 ?>
         <?php include __DIR__ . '/layout/HEADER'; ?>
         <?php include __DIR__ . '/layout/NAVIGATION'; ?>

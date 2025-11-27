@@ -1,20 +1,23 @@
 <?php
     session_start();
     require 'db.php';
-    require 'audit.php';
+    // audit helper (defines logAction)
+    if (file_exists(__DIR__ . '/AUDIT.php')) {
+        require_once __DIR__ . '/AUDIT.php';
+    }
     require 'autolock.php';
+
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: LOGIN.php");
+        exit();
+    }
+
+    $user_id = $_SESSION['user_id'];
 
     // --- FILTER INPUTS ---
     $search = $_GET['search'] ?? '';
     $from = $_GET['from'] ?? '';
     $to = $_GET['to'] ?? '';
-
-    if (!isset($_SESSION['user'])) {
-        header("Location: LOGIN.php");
-        exit();
-    }
-
-    $user_id = $_SESSION['user']['id'];
 
     // Build description for audit
     $desc = "Filters -> Search: " . (!empty($search) ? $search : "None") .
@@ -22,24 +25,9 @@
             ", To: " . (!empty($to) ? $to : "None");
 
     // 🔥 Audit Trail Entry
-    logAction(
-        $conn,
-        $user_id,
-        "FILTER AUDIT LOGS",
-        $desc
-    );
-
-    // --- SQL QUERY ---
-    $sql = "SELECT a.*, u.name 
-            FROM audit_logs a 
-            LEFT JOIN users u ON a.user_id = u.id
-            WHERE 1";
-
-
-    // --- FILTER INPUTS ---
-    $search = $_GET['search'] ?? '';
-    $from = $_GET['from'] ?? '';
-    $to = $_GET['to'] ?? '';
+    if (function_exists('logAction')) {
+        logAction($conn, $user_id, "FILTER AUDIT LOGS", $desc);
+    }
 
     // --- SQL QUERY ---
     $sql = "SELECT a.*, u.name 
@@ -69,6 +57,9 @@
     $sql .= " ORDER BY a.id DESC";
 
     $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Database error: " . $conn->error);
+    }
 
     $bindTypes = "";
     $params = [];
@@ -138,31 +129,33 @@
             </form>
         </div>
 
-        <table class="table table-bordered table-striped mt-3">
-            <thead class="table-dark">
-                <tr>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Description</th>
-                    <th>IP Address</th>
-                    <th>Device</th>
-                    <th>Date Time</th>
-                </tr>
-            </thead>
+        <div class="container">
+            <table class="table table-bordered table-striped mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Description</th>
+                        <th>IP Address</th>
+                        <th>Device</th>
+                        <th>Date Time</th>
+                    </tr>
+                </thead>
 
-            <tbody>
-                <?php while($row = $result->fetch_assoc()): ?>
-                <tr>
-                    <td><?= $row['name'] ?></td>
-                    <td><?= $row['action'] ?></td>
-                    <td><?= $row['description'] ?></td>
-                    <td><?= $row['ip_address'] ?></td>
-                    <td><?= $row['user_agent'] ?></td>
-                    <td><?= $row['created_at'] ?></td>
-                </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
+                <tbody>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($row['name'] ?? 'Unknown') ?></td>
+                        <td><?= htmlspecialchars($row['action'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['description'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['ip_address'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['user_agent'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['created_at'] ?? '') ?></td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
     </main>
     <?php include __DIR__ . '/layout/FOOTER'; ?>
 </div> 

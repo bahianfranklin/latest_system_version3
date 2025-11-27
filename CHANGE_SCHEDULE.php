@@ -2,6 +2,7 @@
     session_start();
     require 'db.php';
     require 'autolock.php';
+    require 'audit.php';
 
     if (!isset($_SESSION['user_id'])) {
         die("Please login first.");
@@ -24,6 +25,10 @@
         $stmt = $conn->prepare("INSERT INTO change_schedule (application_no, date, remarks, total_hours, applied_by) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssi", $appNo, $date, $remarks, $total_hours, $user_id);
         $stmt->execute();
+
+        // 🔥 AUDIT TRAIL FOR ADD
+        $details = "AppNo: $appNo | Date: $date | Hours: $total_hours | Remarks: $remarks";
+        logAction($conn, $user_id, "ADD CHANGE SCHEDULE", $details);
     }
 
     /** ========== EDIT ========= */
@@ -37,14 +42,36 @@
         $stmt = $conn->prepare("UPDATE change_schedule SET date=?, remarks=?, total_hours=?, status=?, datetime_updated=NOW() WHERE id=?");
         $stmt->bind_param("ssssi", $date, $remarks, $total_hours, $status, $id);
         $stmt->execute();
+
+        // 🔥 AUDIT TRAIL FOR EDIT
+        $details = "ID: $id | Status: $status | Date: $date | Hours: $total_hours | Remarks: $remarks";
+        logAction($conn, $user_id, "EDIT CHANGE SCHEDULE", $details);
     }
 
     /** ========== DELETE ========= */
     if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         $id = $_POST['id'];
+
+        // 1️⃣ Fetch details before deleting
+        $stmtInfo = $conn->prepare("SELECT application_no, date, remarks, total_hours FROM change_schedule WHERE id=?");
+        $stmtInfo->bind_param("i", $id);
+        $stmtInfo->execute();
+        $resInfo = $stmtInfo->get_result();
+        $data = $resInfo->fetch_assoc();
+
+        if ($data) {
+            $details = "AppNo: {$data['application_no']} | Date: {$data['date']} | Hours: {$data['total_hours']} | Remarks: {$data['remarks']}";
+        } else {
+            $details = "CS ID: $id (Record not found before delete)";
+        }
+
+        // 2️⃣ Perform deletion
         $stmt = $conn->prepare("DELETE FROM change_schedule WHERE id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+
+        // 3️⃣ Audit log
+        logAction($conn, $user_id, "DELETE CHANGE SCHEDULE", $details);
     }
 
     /** ========== FETCH ========= */
@@ -76,6 +103,12 @@
 
     $result = $conn->query($sql);
 
+    // 🔥 AUDIT TRAIL FOR FILTER
+    $filter_details = "Filters: ";
+    $filter_details .= !empty($_GET['date_range']) ? "Date Range: {$_GET['date_range']}; " : "";
+    $filter_details .= !empty($_GET['status']) ? "Status: {$_GET['status']}; " : "";
+    if ($filter_details == "Filters: ") $filter_details .= "None";
+    logAction($conn, $user_id, "FILTER CHANGE SCHEDULE", $filter_details);
 ?>
         <?php include __DIR__ . '/layout/HEADER'; ?>
         <?php include __DIR__ . '/layout/NAVIGATION'; ?>

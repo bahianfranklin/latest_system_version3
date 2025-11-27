@@ -1,5 +1,6 @@
 <?php
     require 'db.php';
+    require 'audit.php';
 
     // Fetch all users + working hours
     $query = "

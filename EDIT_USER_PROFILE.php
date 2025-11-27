@@ -1,6 +1,7 @@
 <?php
     session_start();
     require 'db.php';
+    require 'autolock.php';
 
     if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: INDEX.php");

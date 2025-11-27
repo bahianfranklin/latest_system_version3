@@ -2,6 +2,7 @@
     session_start();
     require 'db.php';
     require 'autolock.php';
+    require 'audit.php';
 
     if (!isset($_SESSION['user_id'])) {
         die("Please login first.");
@@ -30,6 +31,10 @@
             VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssssi", $appNo, $ot_date, $from_time, $to_time, $purpose, $work_schedule, $user_id);
         $stmt->execute();
+
+        // 🔥 AUDIT TRAIL FOR ADDING OVERTIME
+        logAction($conn, $user_id, "ADD OVERTIME", "Applied OT: $appNo | $ot_date $from_time-$to_time | $purpose | $work_schedule");
+
     }
 
     /** ========== EDIT ========= */
@@ -47,6 +52,9 @@
             WHERE id=?");
         $stmt->bind_param("ssssssi", $ot_date, $from_time, $to_time, $purpose, $work_schedule, $status, $id);
         $stmt->execute();
+
+        // 🔥 AUDIT TRAIL FOR EDITING OVERTIME
+        logAction($conn, $user_id, "EDIT OVERTIME", "Edited OT ID: $id | Status: $status | Date: $ot_date | $from_time-$to_time");
     }
 
     /** ========== DELETE ========= */
@@ -55,6 +63,9 @@
         $stmt = $conn->prepare("DELETE FROM overtime WHERE id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+
+        // 🔥 AUDIT TRAIL FOR DELETING OVERTIME
+        logAction($conn, $user_id, "DELETE OVERTIME", "Deleted OT ID: $id");
     }
 
     /** ========== FETCH ========= */
@@ -104,6 +115,9 @@
     }
     $stmt->execute();
     $result = $stmt->get_result();
+
+    //Audit Trail for filtering overtime requests
+    logAction($conn, $user_id, "FILTER OVERTIME REQUESTS", "Filters: " . json_encode($_GET));
 ?>
         <?php include __DIR__ . '/layout/HEADER'; ?>
         <?php include __DIR__ . '/layout/NAVIGATION'; ?>

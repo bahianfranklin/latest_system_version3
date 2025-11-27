@@ -11,6 +11,7 @@
     session_start();
     require 'db.php';
     require 'autolock.php';
+    require 'audit.php';
 
     // ✅ Ensure logged in
     if (!isset($_SESSION['user_id'])) {
@@ -149,6 +150,9 @@
             die("Insert failed: " . $stmt2->error);
         }
 
+        // 🔥 AUDIT TRAIL
+        logAction($conn, $user_id, "CREATED LEAVE APPLICATION", "Added: $leave_type from $date_from to $date_to");
+
         // ✅ Redirect after add
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
@@ -253,6 +257,9 @@
             die("Update failed: " . $stmt->error);
         }
 
+        // 🔥 AUDIT TRAIL
+        logAction($conn, $user_id, "UPDATED LEAVE APPLICATION", "Updated: $leave_type from $date_from to $date_to");
+
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     }
@@ -262,12 +269,42 @@
     // ==============================
     if ($action === 'delete') {
         $id = (int) $_POST['id'];
+
+        // 1️⃣ Fetch record BEFORE deleting it
+        $stmtInfo = $conn->prepare("
+            SELECT application_no, leave_type, date_from, date_to, remarks 
+            FROM leave_requests 
+            WHERE id=? AND user_id=?
+        ");
+        $stmtInfo->bind_param("ii", $id, $user_id);
+        $stmtInfo->execute();
+        $resultInfo = $stmtInfo->get_result();
+        $deletedData = $resultInfo->fetch_assoc();
+
+        if ($deletedData) {
+            // Prepare readable audit text
+            $details = "AppNo: {$deletedData['application_no']}, "
+                    . "Type: {$deletedData['leave_type']}, "
+                    . "From: {$deletedData['date_from']}, "
+                    . "To: {$deletedData['date_to']}, "
+                    . "Remarks: {$deletedData['remarks']}";
+        } else {
+            // Fallback (should not happen)
+            $details = "Leave ID: $id (record not found before deletion)";
+        }
+
+        // 2️⃣ Perform Delete
         $stmt4 = $conn->prepare("DELETE FROM leave_requests WHERE id=? AND user_id=?");
         $stmt4->bind_param("ii", $id, $user_id);
+
         if (!$stmt4->execute()) {
             die("Delete failed: " . $stmt4->error);
         }
-        // ✅ Redirect after delete
+
+        // 3️⃣ Audit Trail with FULL DETAILS
+        logAction($conn, $user_id, "DELETED LEAVE APPLICATION", $details);
+
+        // 4️⃣ Redirect
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     }
@@ -298,6 +335,9 @@
 
     $whereSQL = $where ? "WHERE " . implode(" AND ", $where) : "";
 
+    // 🔥 AUDIT TRAIL
+    logAction($conn, $user_id, "FILTER LEAVE REQUESTS", "Filters: " . json_encode($_GET));
+    
     // ==============================
     // Fetch Leave Requests
     // ==============================
