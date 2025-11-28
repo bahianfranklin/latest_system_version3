@@ -68,6 +68,143 @@
         exit;
     }
 
+    // --- HANDLE ROLE ACCESS MANAGEMENT ACTIONS ---
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['role_access_action']) && isset($_POST['module'])) {
+        $role_id = intval($_POST['role_id'] ?? 0);
+
+        if ($role_id > 0) {
+            // Delete old access for this role
+            $stmtDel = $conn->prepare("DELETE FROM role_access WHERE role_id = ?");
+            if ($stmtDel) {
+                $stmtDel->bind_param("i", $role_id);
+                if (!$stmtDel->execute()) {
+                    error_log('USER_MAINTENANCE role_access: delete failed: ' . $conn->error);
+                }
+                $stmtDel->close();
+            }
+
+            // Insert new access settings
+            foreach ($_POST['module'] as $module_id => $actions) {
+                $module_id = intval($module_id);
+                $can_view   = isset($actions['view']) ? 1 : 0;
+                $can_add    = isset($actions['add']) ? 1 : 0;
+                $can_edit   = isset($actions['edit']) ? 1 : 0;
+                $can_delete = isset($actions['delete']) ? 1 : 0;
+
+                // Only insert if at least one permission is granted
+                if ($can_view || $can_add || $can_edit || $can_delete) {
+                    $stmt = $conn->prepare("
+                        INSERT INTO role_access (role_id, module_id, can_view, can_add, can_edit, can_delete)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    if ($stmt) {
+                        $stmt->bind_param("iiiiii", $role_id, $module_id, $can_view, $can_add, $can_edit, $can_delete);
+                        if (!$stmt->execute()) {
+                            error_log('USER_MAINTENANCE role_access: execute failed for module_id=' . $module_id . ': ' . $conn->error);
+                        }
+                        $stmt->close();
+                    } else {
+                        error_log('USER_MAINTENANCE role_access: prepare failed: ' . $conn->error);
+                    }
+                }
+            }
+        }
+
+        header("Location: USER_MAINTENANCE.php?maintenanceTabs=role_access_management&role_id=" . $role_id . "&success=1");
+        exit();
+    }
+
+    // --- HANDLE APPROVER MAINTENANCE ACTIONS ---
+    if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['approver_action'])) {
+        $action = $_POST['action'] ?? null;
+
+        if ($action === "insert") {
+            $work_detail_id = (int) ($_POST['work_detail_id'] ?? 0);
+            $department_id  = (int) ($_POST['department_id'] ?? 0);
+
+            if ($work_detail_id > 0 && $department_id > 0) {
+                // Check if department already has an approver
+                $check = $conn->prepare("SELECT COUNT(*) FROM approver_assignments WHERE department_id = ?");
+                if ($check) {
+                    $check->bind_param("i", $department_id);
+                    $check->execute();
+                    $check->bind_result($count);
+                    $check->fetch();
+                    $check->close();
+
+                    if ($count > 0) {
+                        header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=department_exists");
+                        exit();
+                    }
+                }
+
+                // Get user_id from work_details
+                $stmtUser = $conn->prepare("SELECT user_id FROM work_details WHERE work_detail_id = ?");
+                if ($stmtUser) {
+                    $stmtUser->bind_param("i", $work_detail_id);
+                    $stmtUser->execute();
+                    $stmtUser->bind_result($user_id);
+                    $stmtUser->fetch();
+                    $stmtUser->close();
+
+                    if ($user_id) {
+                        $stmt = $conn->prepare("INSERT INTO approver_assignments (user_id, work_detail_id, department_id) VALUES (?, ?, ?)");
+                        if ($stmt) {
+                            $stmt->bind_param("iii", $user_id, $work_detail_id, $department_id);
+                            $stmt->execute();
+                            $stmt->close();
+                        }
+                    }
+                }
+            }
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
+            exit();
+        }
+
+        if ($action === "update") {
+            $id             = (int) ($_POST['id'] ?? 0);
+            $work_detail_id = (int) ($_POST['work_detail_id'] ?? 0);
+            $department_id  = (int) ($_POST['department_id'] ?? 0);
+
+            if ($id > 0 && $work_detail_id > 0 && $department_id > 0) {
+                $stmtUser = $conn->prepare("SELECT user_id FROM work_details WHERE work_detail_id = ?");
+                if ($stmtUser) {
+                    $stmtUser->bind_param("i", $work_detail_id);
+                    $stmtUser->execute();
+                    $stmtUser->bind_result($user_id);
+                    $stmtUser->fetch();
+                    $stmtUser->close();
+
+                    if ($user_id) {
+                        $stmt = $conn->prepare("UPDATE approver_assignments SET user_id=?, work_detail_id=?, department_id=? WHERE id=?");
+                        if ($stmt) {
+                            $stmt->bind_param("iiii", $user_id, $work_detail_id, $department_id, $id);
+                            $stmt->execute();
+                            $stmt->close();
+                        }
+                    }
+                }
+            }
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
+            exit();
+        }
+
+        if ($action === "delete") {
+            $id = (int) ($_POST['id'] ?? 0);
+
+            if ($id > 0) {
+                $stmt = $conn->prepare("DELETE FROM approver_assignments WHERE id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
+            exit();
+        }
+    }
+
     include __DIR__ . '/layout/HEADER';
     include __DIR__ . '/layout/NAVIGATION';
 ?>

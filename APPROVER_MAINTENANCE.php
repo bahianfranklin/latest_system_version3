@@ -3,12 +3,17 @@
 
     // ✅ Handle insert
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] === "insert") {
-        $work_detail_id = $_POST['work_detail_id'] ?? null;
-        $department_id  = $_POST['department_id'] ?? null;
+        $work_detail_id = (int) ($_POST['work_detail_id'] ?? 0);
+        $department_id  = (int) ($_POST['department_id'] ?? 0);
 
-        if ($work_detail_id && $department_id) {
+        if ($work_detail_id > 0 && $department_id > 0) {
             // 🔹 Check if department already has an approver
             $check = $conn->prepare("SELECT COUNT(*) FROM approver_assignments WHERE department_id = ?");
+            if (!$check) {
+                error_log('APPROVER_MAINTENANCE insert: prepare check failed: ' . $conn->error);
+                header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+                exit();
+            }
             $check->bind_param("i", $department_id);
             $check->execute();
             $check->bind_result($count);
@@ -17,13 +22,17 @@
 
             if ($count > 0) {
                 // 🚫 Already has an approver
-                // Ensure we return to the maintenance tab and show the error
                 header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=department_exists");
                 exit();
             }
 
             // 🔹 Get user_id from work_details
             $stmtUser = $conn->prepare("SELECT user_id FROM work_details WHERE work_detail_id = ?");
+            if (!$stmtUser) {
+                error_log('APPROVER_MAINTENANCE insert: prepare user_id failed: ' . $conn->error);
+                header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+                exit();
+            }
             $stmtUser->bind_param("i", $work_detail_id);
             $stmtUser->execute();
             $stmtUser->bind_result($user_id);
@@ -32,8 +41,19 @@
 
             if ($user_id) {
                 $stmt = $conn->prepare("INSERT INTO approver_assignments (user_id, work_detail_id, department_id) VALUES (?, ?, ?)");
+                if (!$stmt) {
+                    error_log('APPROVER_MAINTENANCE insert: prepare insert failed: ' . $conn->error);
+                    header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+                    exit();
+                }
                 $stmt->bind_param("iii", $user_id, $work_detail_id, $department_id);
-                $stmt->execute();
+                if (!$stmt->execute()) {
+                    error_log('APPROVER_MAINTENANCE insert: execute failed: ' . $conn->error);
+                    $stmt->close();
+                    header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+                    exit();
+                }
+                $stmt->close();
             }
         }
         // Redirect back to the maintenance hub's approver tab
@@ -43,12 +63,23 @@
 
     // ✅ Handle update
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] === "update") {
-        $id             = $_POST['id'];
-        $work_detail_id = $_POST['work_detail_id'];
-        $department_id  = $_POST['department_id'];
+        $id             = (int) ($_POST['id'] ?? 0);
+        $work_detail_id = (int) ($_POST['work_detail_id'] ?? 0);
+        $department_id  = (int) ($_POST['department_id'] ?? 0);
+
+        if ($id <= 0 || $work_detail_id <= 0 || $department_id <= 0) {
+            error_log('APPROVER_MAINTENANCE update: invalid params - id=' . $id . ' wd=' . $work_detail_id . ' d=' . $department_id);
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=invalid_input");
+            exit();
+        }
 
         // 🔹 Get user_id from work_details
         $stmtUser = $conn->prepare("SELECT user_id FROM work_details WHERE work_detail_id = ?");
+        if (!$stmtUser) {
+            error_log('APPROVER_MAINTENANCE update: prepare user_id failed: ' . $conn->error);
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+            exit();
+        }
         $stmtUser->bind_param("i", $work_detail_id);
         $stmtUser->execute();
         $stmtUser->bind_result($user_id);
@@ -57,8 +88,19 @@
 
         if ($user_id) {
             $stmt = $conn->prepare("UPDATE approver_assignments SET user_id=?, work_detail_id=?, department_id=? WHERE id=?");
+            if (!$stmt) {
+                error_log('APPROVER_MAINTENANCE update: prepare update failed: ' . $conn->error);
+                header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+                exit();
+            }
             $stmt->bind_param("iiii", $user_id, $work_detail_id, $department_id, $id);
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                error_log('APPROVER_MAINTENANCE update: execute failed: ' . $conn->error);
+                $stmt->close();
+                header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+                exit();
+            }
+            $stmt->close();
         }
 
         // Redirect back to the maintenance hub's approver tab
@@ -68,10 +110,38 @@
 
     // ✅ Handle delete
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] === "delete") {
-        $id = $_POST['id'];
-        $stmt = $conn->prepare("DELETE FROM approver_assignments WHERE id=?");
+        $id = (int) ($_POST['id'] ?? 0);
+
+        if ($id <= 0) {
+            error_log('APPROVER_MAINTENANCE delete: invalid id=' . $id);
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=invalid_input");
+            exit();
+        }
+
+        $stmt = $conn->prepare("DELETE FROM approver_assignments WHERE id = ?");
+        if (!$stmt) {
+            error_log('APPROVER_MAINTENANCE delete: prepare failed: ' . $conn->error);
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+            exit();
+        }
+
         $stmt->bind_param("i", $id);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            error_log('APPROVER_MAINTENANCE delete: execute failed: ' . $conn->error);
+            $stmt->close();
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=db_error");
+            exit();
+        }
+
+        // Check if any rows were actually deleted
+        $rows_affected = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($rows_affected === 0) {
+            error_log('APPROVER_MAINTENANCE delete: no rows affected for id=' . $id);
+            header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&error=not_found");
+            exit();
+        }
 
         // Redirect back to the maintenance hub's approver tab
         header("Location: USER_MAINTENANCE.php?maintenanceTabs=approver_maintenance&success=1");
@@ -105,8 +175,9 @@
         <div class="container mt-4">
             <h5>Approver Assignment</h5>
             <br>
-            <form method="POST" action="APPROVER_MAINTENANCE.php">
+            <form method="POST" action="USER_MAINTENANCE.php">
                 <input type="hidden" name="action" value="insert">
+                <input type="hidden" name="approver_action" value="1">
 
                 <!--Display departments with approver and do not have -->
                 <div class="row mb-4">
@@ -213,8 +284,9 @@
                         <!-- Edit Modal -->
                         <div class='modal fade' id='editModal{$row['id']}' tabindex='-1'>
                             <div class='modal-dialog'>
-                                <form method='POST' action='APPROVER_MAINTENANCE.php'>
+                                <form method='POST' action='USER_MAINTENANCE.php'>
                                     <input type='hidden' name='action' value='update'>
+                                    <input type='hidden' name='approver_action' value='1'>
                                     <input type='hidden' name='id' value='{$row['id']}'>
                                     <div class='modal-content'>
                                         <div class='modal-header'><h5>Edit Assignment</h5></div>
@@ -256,8 +328,9 @@
                         <!-- Delete Modal -->
                         <div class='modal fade' id='deleteModal{$row['id']}' tabindex='-1'>
                             <div class='modal-dialog'>
-                                <form method='POST' action='APPROVER_MAINTENANCE.php'>
+                                <form method='POST' action='USER_MAINTENANCE.php'>
                                     <input type='hidden' name='action' value='delete'>
+                                    <input type='hidden' name='approver_action' value='1'>
                                     <input type='hidden' name='id' value='{$row['id']}'>
                                     <div class='modal-content'>
                                         <div class='modal-header'><h5>Confirm Delete</h5></div>

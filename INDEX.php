@@ -14,6 +14,21 @@
     $user_id = $_SESSION['user_id'] ?? 1; // change if needed
     $sessionUser = $_SESSION['user'] ?? null;
 
+    // ✅ Determine if user is an approver
+    $approver = false;
+    if ($user_id) {
+        $stmtAppr = $conn->prepare("SELECT COUNT(*) AS is_approver FROM approver_assignments WHERE user_id = ?");
+        if ($stmtAppr) {
+            $stmtAppr->bind_param("i", $user_id);
+            $stmtAppr->execute();
+            $resAppr = $stmtAppr->get_result();
+            if ($resAppr && ($rowAppr = $resAppr->fetch_assoc())) {
+                $approver = $rowAppr['is_approver'] > 0;
+            }
+            $stmtAppr->close();
+        }
+    }
+
     // ✅ Get Leave Balance
     $leave_sql = "SELECT mandatory, vacation_leave, sick_leave FROM leave_credits WHERE user_id = ?";
     $leave = ['mandatory' => 0, 'vacation_leave' => 0, 'sick_leave' => 0];
@@ -116,7 +131,7 @@
     }
 
     // User's Pending Overtime Requests
-    $sqlUserPendingOvertime = "SELECT COUNT(*) AS pending FROM overtime WHERE user_id = ? AND status = 'Pending'";
+    $sqlUserPendingOvertime = "SELECT COUNT(*) AS pending FROM overtime WHERE applied_by = ? AND status = 'Pending'";
     $userPendingOvertime = 0;
     if ($stmtOP = $conn->prepare($sqlUserPendingOvertime)) {
         $stmtOP->bind_param("i", $user_id);
@@ -124,11 +139,11 @@
         $userPendingOvertime = $stmtOP->get_result()->fetch_assoc()['pending'] ?? 0;
         $stmtOP->close();
     } else {
-        error_log("prepare failed (pending overtime): " . $conn->error);
+        error_log("INDEX.php prepare failed (pending overtime): " . $conn->error . " | SQL: " . $sqlUserPendingOvertime);
     }
 
     // User's Pending Official Business Requests
-    $sqlUserPendingOfficial_Business = "SELECT COUNT(*) AS pending FROM official_business WHERE user_id = ? AND status = 'Pending'";
+    $sqlUserPendingOfficial_Business = "SELECT COUNT(*) AS pending FROM official_business WHERE applied_by = ? AND status = 'Pending'";
     $userPendingOfficial_Business = 0;
     if ($stmtOBP = $conn->prepare($sqlUserPendingOfficial_Business)) {
         $stmtOBP->bind_param("i", $user_id);
@@ -136,11 +151,11 @@
         $userPendingOfficial_Business = $stmtOBP->get_result()->fetch_assoc()['pending'] ?? 0;
         $stmtOBP->close();
     } else {
-        error_log("prepare failed (pending official business): " . $conn->error);
+        error_log("INDEX.php prepare failed (pending official business): " . $conn->error . " | SQL: " . $sqlUserPendingOfficial_Business);
     }
 
     // User's Pending Change Schedule Requests
-    $sqlUserPendingChange_Schedule = "SELECT COUNT(*) AS pending FROM change_schedule WHERE user_id = ? AND status = 'Pending'";
+    $sqlUserPendingChange_Schedule = "SELECT COUNT(*) AS pending FROM change_schedule WHERE applied_by = ? AND status = 'Pending'";
     $userPendingChange_Schedule = 0;
     if ($stmtCSP = $conn->prepare($sqlUserPendingChange_Schedule)) {
         $stmtCSP->bind_param("i", $user_id);
@@ -148,11 +163,11 @@
         $userPendingChange_Schedule = $stmtCSP->get_result()->fetch_assoc()['pending'] ?? 0;
         $stmtCSP->close();
     } else {
-        error_log("prepare failed (pending change schedule): " . $conn->error);
+        error_log("INDEX.php prepare failed (pending change schedule): " . $conn->error . " | SQL: " . $sqlUserPendingChange_Schedule);
     }
 
     // User's Pending Failure Clock Requests
-    $sqlUserPendingFailure_Clock = "SELECT COUNT(*) AS pending FROM failure_clock WHERE user_id = ? AND status = 'Pending'";
+    $sqlUserPendingFailure_Clock = "SELECT COUNT(*) AS pending FROM failure_clock WHERE applied_by = ? AND status = 'Pending'";
     $userPendingFailure_Clock = 0;
     if ($stmtFCP = $conn->prepare($sqlUserPendingFailure_Clock)) {
         $stmtFCP->bind_param("i", $user_id);
@@ -160,11 +175,11 @@
         $userPendingFailure_Clock = $stmtFCP->get_result()->fetch_assoc()['pending'] ?? 0;
         $stmtFCP->close();
     } else {
-        error_log("prepare failed (pending failure clock): " . $conn->error);
+        error_log("INDEX.php prepare failed (pending failure clock): " . $conn->error . " | SQL: " . $sqlUserPendingFailure_Clock);
     }
 
     // User's Pending Clock Alteration Requests
-    $sqlUserPendingClock_Alteration = "SELECT COUNT(*) AS pending FROM clock_alteration WHERE user_id = ? AND status = 'Pending'";
+    $sqlUserPendingClock_Alteration = "SELECT COUNT(*) AS pending FROM clock_alteration WHERE applied_by = ? AND status = 'Pending'";
     $userPendingClock_Alteration = 0;
     if ($stmtCAP = $conn->prepare($sqlUserPendingClock_Alteration)) {
         $stmtCAP->bind_param("i", $user_id);
@@ -172,11 +187,11 @@
         $userPendingClock_Alteration = $stmtCAP->get_result()->fetch_assoc()['pending'] ?? 0;
         $stmtCAP->close();
     } else {
-        error_log("prepare failed (pending clock alteration): " . $conn->error);
+        error_log("INDEX.php prepare failed (pending clock alteration): " . $conn->error . " | SQL: " . $sqlUserPendingClock_Alteration);
     }
 
     // User's Pending Work Restday Requests
-    $sqlUserPendingWork_Restday = "SELECT COUNT(*) AS pending FROM work_restday WHERE user_id = ? AND status = 'Pending'";
+    $sqlUserPendingWork_Restday = "SELECT COUNT(*) AS pending FROM work_restday WHERE applied_by = ? AND status = 'Pending'";
     $userPendingWork_Restday = 0;
     if ($stmtWRP = $conn->prepare($sqlUserPendingWork_Restday)) {
         $stmtWRP->bind_param("i", $user_id);
@@ -184,7 +199,7 @@
         $userPendingWork_Restday = $stmtWRP->get_result()->fetch_assoc()['pending'] ?? 0;
         $stmtWRP->close();
     } else {
-        error_log("prepare failed (pending work restday): " . $conn->error);
+        error_log("INDEX.php prepare failed (pending work restday): " . $conn->error . " | SQL: " . $sqlUserPendingWork_Restday);
     }
 
     // Check if user did NOT logout today
@@ -384,6 +399,7 @@
                                     <span>Pending Leave Requests</span>
                                     <span class="fw-bold text-primary"><?= $userPendingLeave ?></span>
                                 </div>
+                            </a>
 
                             <a href="OVERTIME.php" class="text-decoration-none">
                                 <div class="d-flex justify-content-between align-items-center mb-2">

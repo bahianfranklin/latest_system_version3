@@ -28,7 +28,7 @@ if (
         }
 
         $description = "Added working hours: $work_day ($time_in - $time_out)";
-        logAction($conn, $_SESSION['user_id'], "ADD", $description);
+        logAction($conn, $_SESSION['user_id'], "ADD WORK ON RESTDAY", $description);
 
         echo "Working hours added successfully.";
     } else {

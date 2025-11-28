@@ -28,7 +28,7 @@
     $userId = $_SESSION['user_id'] ?? 0;
 
     $details  = "Search: {$searchText}; Role Filter: {$roleText}; Department Filter: {$deptText}";
-    logAction($conn, $userId, "Directory Search", $details);
+    logAction($conn, $userId, "DIRECTORY SEARCH", $details);
 
     // 🗃️ Get list of departments for dropdown
     $deptResult = $conn->query("SELECT DISTINCT department FROM work_details ORDER BY department ASC");

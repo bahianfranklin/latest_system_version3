@@ -159,7 +159,10 @@ function getRequirements($conn) {
       <div class="modal-content">
         <div class="modal-header bg-primary text-white">
           <h5 class="modal-title">Upload User Requirement</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <!-- <button type="button" class="btn-close btn-close-white" -->
+                  <!-- data-bs-dismiss="modal" -->
+                  <!-- onclick="window.location='USER_MAINTENANCE.php';"> -->
+          <!-- </button> -->
         </div>
         <div class="modal-body">
           <input type="hidden" name="user_id" id="modal_user_id">

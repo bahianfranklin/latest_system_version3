@@ -1,7 +1,14 @@
 <?php
 require 'db.php';
 require 'audit.php';
+session_start();
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1); // ✅ FIXED
+if (
+    isset($_POST['id'], $_POST['time_in'], $_POST['time_out'])
+) {
+    
 $id = $_POST['id'];
 $time_in = $_POST['time_in'];
 $time_out = $_POST['time_out'];
@@ -26,5 +33,8 @@ if ($stmt->execute()) {
     echo "Updated successfully!";
 } else {
     echo "Error: " . $stmt->error;
+}
+} else {
+    echo "Incomplete data.";
 }
 ?>
