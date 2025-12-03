@@ -1,6 +1,11 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require 'db.php';
+
+$message = $_SESSION['message'] ?? '';
+unset($_SESSION['message']);
 
 // ADD new module
 if (isset($_POST['add'])) {
@@ -14,7 +19,7 @@ if (isset($_POST['add'])) {
     $stmt->close();
 
     $_SESSION['message'] = "Module added successfully!";
-    header("Location: modules.php");
+    header("Location: MAINTENANCE.php?tab=modules");
     exit();
 }
 
@@ -31,7 +36,7 @@ if (isset($_POST['update'])) {
     $stmt->close();
 
     $_SESSION['message'] = "Module updated successfully!";
-    header("Location: modules.php");
+    header("Location: MAINTENANCE.php?tab=modules");
     exit();
 }
 
@@ -46,7 +51,7 @@ if (isset($_POST['delete'])) {
     $stmt->close();
 
     $_SESSION['message'] = "Module deleted successfully!";
-    header("Location: modules.php");
+    header("Location: MAINTENANCE.php?tab=modules");
     exit();
 }
 
@@ -92,7 +97,7 @@ $result = $conn->query("SELECT * FROM modules ORDER BY id ASC");
                 <td><?= htmlspecialchars($row['description']) ?></td>
                 <td>
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modules_editModal<?= $row['id'] ?>">Edit</button>
-                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="modules_deleteModal<?= $row['id'] ?>">Delete</button>
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modules_deleteModal<?= $row['id'] ?>">Delete</button>
                 </td>
             </tr>
 
@@ -198,15 +203,13 @@ $result = $conn->query("SELECT * FROM modules ORDER BY id ASC");
   </div>
 </div>
 
+<?php if ($message): ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var message = <?= json_encode($message) ?>;
-    if (message) {
-        var messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
-        messageModal.show();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    new bootstrap.Modal(document.getElementById('messageModal')).show();
 });
 </script>
+<?php endif; ?>
 
 </body>
 </html>

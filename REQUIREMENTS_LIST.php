@@ -8,7 +8,7 @@ if (isset($_POST['add_requirement'])) {
   $stmt = $conn->prepare("INSERT INTO requirements (requirement_name, description) VALUES (?, ?)");
   $stmt->bind_param("ss", $name, $desc);
   $stmt->execute();
-  header("Location: " . $_SERVER['PHP_SELF']);
+  header("Location: MAINTENANCE.php?tab=requirements_list");
   exit;
 }
 
@@ -21,7 +21,7 @@ if (isset($_POST['edit_requirement'])) {
   $stmt = $conn->prepare("UPDATE requirements SET requirement_name=?, description=?, is_active=? WHERE id=?");
   $stmt->bind_param("ssii", $name, $desc, $status, $id);
   $stmt->execute();
-  header("Location: " . $_SERVER['PHP_SELF']);
+  header("Location: MAINTENANCE.php?tab=requirements_list");
   exit;
 }
 
@@ -31,7 +31,7 @@ if (isset($_POST['delete_requirement'])) {
   $stmt = $conn->prepare("DELETE FROM requirements WHERE id=?");
   $stmt->bind_param("i", $id);
   $stmt->execute();
-  header("Location: " . $_SERVER['PHP_SELF']);
+  header("Location: MAINTENANCE.php?tab=requirements_list");
   exit;
 }
 

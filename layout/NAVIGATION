@@ -22,7 +22,7 @@ $approving_pages = [
 ];
 $approving_active = in_array($current_page, $approving_pages);
 
-$reports_pages = ['TIMECARD.PHP', 'TARDINESS_REPORT.PHP', 'LEAVE_CREDIT_MONITORING_1.PHP', 'LEAVE_TRANSACTION.PHP'];
+$reports_pages = ['TIMECARD.PHP', 'TARDINESS_REPORT.PHP', 'LEAVE_CREDIT_MONITORING_1.PHP', 'LEAVE_TRANSACTION.PHP', 'VIEW_LOGS.PHP'];
 $reports_active = in_array($current_page, $reports_pages);
 ?>
 
@@ -155,6 +155,11 @@ $reports_active = in_array($current_page, $reports_pages);
                     <!-- ======================= ANNOUNCEMENT ======================= -->
                     <a class="nav-link <?= ($current_page == 'ANNOUNCEMENTS.php') ? 'active' : '' ?>" href="ANNOUNCEMENTS.php">
                         <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>Announcements
+                    </a>
+
+                    <!-- ======================= SYSTEM SETTING ======================= -->
+                    <a class="nav-link <?= ($current_page == 'SETTINGS.php') ? 'active' : '' ?>" href="SETTINGS.php">
+                        <div class="sb-nav-link-icon"><i class="fas fa-cog"></i></div>System Settings
                     </a>
 
                 </div>

@@ -523,7 +523,7 @@
                     </div>
                 <?php endif; ?>
             </div>
-            <?php include __DIR__ . '/layout/FOOTER'; ?>
+            <?php include __DIR__ . '/layout/FOOTER.php'; ?>
         </div>
     </main>
 </div> 

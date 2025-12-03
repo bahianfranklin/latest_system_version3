@@ -9,6 +9,19 @@ if (!ob_get_level()) {
 
 require_once __DIR__ . '/../db.php';
 
+// LOAD SYSTEM SETTINGS
+$sysQuery = $conn->query("SELECT * FROM system_settings WHERE id = 1");
+$sys = $sysQuery->fetch_assoc();
+
+$SYSTEM_TITLE  = $sys['system_title'] ?? "My System";
+$SYSTEM_LOGO   = $sys['system_logo'] ?? "";
+$SYSTEM_FOOTER = $sys['system_footer'] ?? "";
+
+$logoPath = (!empty($SYSTEM_LOGO) && file_exists(__DIR__ . "/../uploads/" . $SYSTEM_LOGO))
+    ? "uploads/" . $SYSTEM_LOGO
+    : "uploads/default_logo.png"; // fallback logo
+
+
 // Check login based on user_id (more reliable)
 if (!isset($_SESSION['user_id'])) {
     header("Location: LOGIN.php");
@@ -49,7 +62,9 @@ $approver = isApprover($conn, $user_id);
             <meta charset="utf-8" />
             <meta http-equiv="X-UA-Compatible" content="IE=edge" />
             <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-            <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) : 'NEW SAMPLE SYSTEM' ?></title>
+            <title>
+                <?= isset($pageTitle) ? htmlspecialchars($pageTitle) : htmlspecialchars($SYSTEM_TITLE) ?>
+            </title>
             <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
             <link href="css/styles.css" rel="stylesheet" />
             <?= $extraHead ?? '' ?>
@@ -59,7 +74,12 @@ $approver = isApprover($conn, $user_id);
     <body class="sb-nav-fixed">
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
             <!-- Navbar Brand-->
-            <a class="navbar-brand ps-3" href="INDEX.php">NEW SYSTEM LOGO</a>
+            <a class="navbar-brand ps-3" href="INDEX.php" style="display:flex; align-items:center;">
+                <img src="<?= $logoPath ?>?t=<?= time(); ?>" 
+                    alt="System Logo" 
+                    style="height:32px; width:auto; margin-right:8px;">
+                <?= htmlspecialchars($SYSTEM_TITLE) ?>
+            </a>
             <!-- Sidebar Toggle-->
             <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
             <!-- Navbar-->
