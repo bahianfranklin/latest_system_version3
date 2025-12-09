@@ -319,7 +319,7 @@
                 </div>
             </div>
             <br>
-            <?php include __DIR__ . '/layout/FOOTER'; ?>
+            <?php include __DIR__ . '/layout/FOOTER.php'; ?>
         </main>
     </div>
 

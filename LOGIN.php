@@ -1,6 +1,19 @@
 <?php
     session_start();
     require 'db.php';
+
+    // LOAD SYSTEM SETTINGS
+    $sysQuery = $conn->query("SELECT * FROM system_settings WHERE id = 1");
+    $sys = $sysQuery->fetch_assoc();
+
+    $SYSTEM_TITLE  = $sys['system_title'] ?? "My System";
+    $SYSTEM_LOGO   = $sys['system_logo'] ?? "";
+    $SYSTEM_FOOTER = $sys['system_footer'] ?? "";
+
+    $logoPath = (!empty($SYSTEM_LOGO) && file_exists(__DIR__ . "/uploads/" . $SYSTEM_LOGO))
+        ? "uploads/" . $SYSTEM_LOGO
+        : "uploads/default_logo.png";
+
     // audit helper (defines logAction)
     if (file_exists(__DIR__ . '/AUDIT.php')) {
         require_once __DIR__ . '/AUDIT.php';
@@ -50,6 +63,17 @@
                         error_log('logAction() not available — AUDIT.php not included');
                     }
 
+                    // ✅ Handle Remember Me
+                    if (isset($_POST['remember'])) {
+                        // Save for 30 days
+                        setcookie("remember_user", $username, time() + (86400 * 30), "/");
+                        setcookie("remember_pass", $password, time() + (86400 * 30), "/");
+                    } else {
+                        // Clear cookies if unchecked
+                        setcookie("remember_user", "", time() - 3600, "/");
+                        setcookie("remember_pass", "", time() - 3600, "/");
+                    }
+
                     // Redirect to dashboard
                     header("Location: INDEX.php");
                     exit();
@@ -61,6 +85,18 @@
             $error = "Invalid username or password!";
         }
     }
+
+$saved_username = "";
+$saved_password = "";
+
+if (isset($_COOKIE['remember_user'])) {
+    $saved_username = $_COOKIE['remember_user'];
+}
+
+if (isset($_COOKIE['remember_pass'])) {
+    $saved_password = $_COOKIE['remember_pass'];
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -81,7 +117,16 @@
                         <div class="row justify-content-center">
                             <div class="col-lg-5">
                                 <div class="card shadow-lg border-0 rounded-lg mt-5">
-                                    <div class="card-header"><h3 class="text-center font-weight-light my-4">Welcome, Please Login your Account</h3></div>
+                                    <div class="text-center mb-3">
+                                        <br>
+                                        <img src="<?= $logoPath ?>" alt="System Logo" style="max-width: 100px;">
+                                    </div>
+                                    <h3 class="text-center font-weight-light mb-2 mt-3">
+                                        <?= htmlspecialchars($SYSTEM_TITLE) ?>
+                                    </h3>
+                                    <h6 class="text-center mb-3">
+                                        Welcome, Please Login your Account
+                                    </h6>
                                     <div class="card-body">
                                         <form method="POST" action="">
                                             <!-- Success message -->
@@ -100,20 +145,20 @@
                                             <?php endif; ?>
 
                                             <div class="form-floating mb-3">
-                                                <input class="form-control" id="inputUsername" name="username" type="text" placeholder="Username" required />
+                                                <input class="form-control" id="inputUsername" name="username" type="text" value="<?= htmlspecialchars($saved_username) ?>" placeholder="Username" required />
                                                 <label for="inputUsername">Username</label>
                                             </div>
                                             <div class="form-floating mb-3 position-relative">
-                                                <input class="form-control" id="inputPassword" name="password" type="password" placeholder="Password" required />
+                                                <input class="form-control" id="inputPassword" name="password" type="password" value="<?= htmlspecialchars($saved_password) ?>" placeholder="Password" required />
                                                 <label for="inputPassword">Password</label>
                                                 <i class="bi bi-eye-slash position-absolute top-50 end-0 translate-middle-y me-3" id="togglePassword" style="cursor: pointer;"></i>
                                             </div>
                                             <div class="form-check mb-3">
-                                                <input class="form-check-input" id="inputRememberPassword" type="checkbox" />
+                                                <input class="form-check-input" id="inputRememberPassword" type="checkbox" name="remember" />
                                                 <label class="form-check-label" for="inputRememberPassword">Remember Password</label>
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
-                                                <a class="small" href="password.html">Forgot Password?</a>
+                                                <a class="small" href="FORGOT_PASSWORD.php">Forgot Password?</a>
                                                 <button type="submit" class="btn btn-primary">Login</button>
                                             </div>
                                         </form>
@@ -127,7 +172,8 @@
                     </div>
                 </main>
             </div>
-            <?php include __DIR__ . '/layout/FOOTER'; ?>
+            <br>
+            <?php include __DIR__ . '/layout/FOOTER.php'; ?>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
         <script src="js/scripts.js"></script>

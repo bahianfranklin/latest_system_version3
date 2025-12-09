@@ -537,7 +537,7 @@
                     </tbody>
                 </table>
             </main>
-            <?php include __DIR__ . '/layout/FOOTER'; ?>
+            <?php include __DIR__ . '/layout/FOOTER.php'; ?>
         </div>
     </div>
 

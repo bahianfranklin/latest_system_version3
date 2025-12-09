@@ -2,6 +2,18 @@
     session_start();
     require 'db.php'; // this defines $conn, not $pdo
 
+    // LOAD SYSTEM SETTINGS
+    $sysQuery = $conn->query("SELECT * FROM system_settings WHERE id = 1");
+    $sys = $sysQuery->fetch_assoc();
+
+    $SYSTEM_TITLE  = $sys['system_title'] ?? "My System";
+    $SYSTEM_LOGO   = $sys['system_logo'] ?? "";
+    $SYSTEM_FOOTER = $sys['system_footer'] ?? "";
+
+    $logoPath = (!empty($SYSTEM_LOGO) && file_exists(__DIR__ . "/uploads/" . $SYSTEM_LOGO))
+        ? "uploads/" . $SYSTEM_LOGO
+        : "uploads/default_logo.png";
+
     // audit helper (defines logAction)
     if (file_exists(__DIR__ . '/AUDIT.php')) {
         require_once __DIR__ . '/AUDIT.php';
@@ -72,6 +84,10 @@
     <!-- Main Content -->
     <main class="flex-grow-1 d-flex justify-content-center align-items-center">
         <div class="card shadow p-4 text-center" style="max-width: 400px; width: 100%;">
+            <div class="text-center mb-3">
+                <br>
+                <img src="<?= $logoPath ?>" alt="System Logo" style="max-width: 100px;">
+            </div>
             <h3 class="mb-3">Confirm Logout</h3>
             <p>Are you sure you want to logout?</p>
             <form method="post">
@@ -82,7 +98,7 @@
     </main>
 
     <!-- Footer -->
-    <?php include __DIR__ . '/layout/FOOTER'; ?>
+    <?php include __DIR__ . '/layout/FOOTER.php'; ?>
     
 </body>
 </html>

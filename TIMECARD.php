@@ -502,7 +502,7 @@ $sql = "SELECT leave_type, type, date_from, date_to, remarks
         <?php } ?>
     </main>
 
-    <?php include __DIR__ . '/layout/FOOTER'; ?>
+    <?php include __DIR__ . '/layout/FOOTER.php'; ?>
 </div>
 
 <!-- ✅ Scripts -->

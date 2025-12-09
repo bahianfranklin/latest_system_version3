@@ -177,7 +177,7 @@ if ($selected_period_id > 0) {
             <div class="alert alert-info">No tardiness records found for this period.</div>
         <?php endif; ?>
     </main>        
-    <?php include __DIR__ . '/layout/FOOTER'; ?>
+    <?php include __DIR__ . '/layout/FOOTER.php'; ?>
 </div>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
