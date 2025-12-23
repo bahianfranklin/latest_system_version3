@@ -31,12 +31,13 @@ $hr_pages = [
 $hr_active = in_array($current_page, $hr_pages);
 
 $hr_pages = [
-    'GENERATE_ID.PHP',
-    'GENERATE_COE.PHP',
-    'LEAVE_CREDIT_MONITORING_1.PHP',
+    'GENERATE_ID-TEST.PHP',
+    'GENERATE_COE-TEST.PHP',
+    'LOG_HISTORY-MULTIPLE_USER.PHP',
     'LEAVE_TRANSACTION.PHP',
     'VIEW_LOGS.PHP'
 ];
+
 ?>
 
 <style>
@@ -188,11 +189,11 @@ $hr_pages = [
 
                     <div class="collapse <?= $reports_active ? 'show' : '' ?>" id="collapseHRModules" data-bs-parent="#sidenavAccordion">
                         <nav class="sb-sidenav-menu-nested nav">
-                            <a class="nav-link <?= ($current_page == 'GENERATE_ID.PHP') ? 'active' : '' ?>" href="GENERATE_ID.PHP">Generation of ID</a>
-                            <a class="nav-link <?= ($current_page == 'GENERATE_COE.PHP') ? 'active' : '' ?>" href="GENERATE_COE.PHP">Generation of COE</a>
-                            <a class="nav-link <?= ($current_page == 'LEAVE_CREDIT_MONITORING_1.PHP') ? 'active' : '' ?>" href="LEAVE_CREDIT_MONITORING_1.PHP">Leave Credit Monitoring</a>
-                            <a class="nav-link <?= ($current_page == 'LEAVE_TRANSACTION.PHP') ? 'active' : '' ?>" href="LEAVE_TRANSACTION.PHP">Leave Transaction</a>
-                            <a class="nav-link <?= ($current_page == 'VIEW_LOGS.PHP') ? 'active' : '' ?>" href="VIEW_LOGS.PHP">Audit Trail</a>
+                            <a class="nav-link <?= ($current_page == 'GENERATE_ID-TEST.PHP') ? 'active' : '' ?>" href="GENERATE_ID-TEST.PHP">Generation of ID</a>
+                            <a class="nav-link <?= ($current_page == 'GENERATE_COE-TEST.PHP') ? 'active' : '' ?>" href="GENERATE_COE-TEST.PHP">Generation of COE</a>
+                            <a class="nav-link <?= ($current_page == 'LOG_HISTORY-MULTIPLE_USER.PHP') ? 'active' : '' ?>" href="LOG_HISTORY-MULTIPLE_USER.PHP">Log History(Multiple Users)</a>
+                            <a class="nav-link <?= ($current_page == '#') ? 'active' : '' ?>" href="#">Leave Transaction</a>
+                            <a class="nav-link <?= ($current_page == '#') ? 'active' : '' ?>" href="#">Audit Trail</a>
                         </nav>
                     </div>
 
