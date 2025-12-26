@@ -192,8 +192,8 @@ $hr_pages = [
                             <a class="nav-link <?= ($current_page == 'GENERATE_ID-TEST.PHP') ? 'active' : '' ?>" href="GENERATE_ID-TEST.PHP">Generation of ID</a>
                             <a class="nav-link <?= ($current_page == 'GENERATE_COE-TEST.PHP') ? 'active' : '' ?>" href="GENERATE_COE-TEST.PHP">Generation of COE</a>
                             <a class="nav-link <?= ($current_page == 'LOG_HISTORY-MULTIPLE_USER.PHP') ? 'active' : '' ?>" href="LOG_HISTORY-MULTIPLE_USER.PHP">Log History(Multiple Users)</a>
-                            <a class="nav-link <?= ($current_page == '#') ? 'active' : '' ?>" href="#">Leave Transaction</a>
-                            <a class="nav-link <?= ($current_page == '#') ? 'active' : '' ?>" href="#">Audit Trail</a>
+                            <a class="nav-link <?= ($current_page == '#') ? 'active' : '' ?>" href="#">Benifits Maintenance (SSS, PAG-IBIG & PhilHealth)</a>
+                            <a class="nav-link <?= ($current_page == '#') ? 'active' : '' ?>" href="#">Approving Upload Req. (Per Users)</a>
                         </nav>
                     </div>
 

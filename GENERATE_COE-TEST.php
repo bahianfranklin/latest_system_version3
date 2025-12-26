@@ -1,221 +1,335 @@
 <?php
 require 'db.php';
 
-/* ============================
-   AJAX: Fetch employees
-============================ */
-if (isset($_GET['ajax']) && $_GET['ajax'] === 'employees') {
+/* =========================
+   AJAX: Fetch single employee (COE)
+========================= */
+if (isset($_GET['id'])) {
     header('Content-Type: application/json');
 
-    // Ensure we have a valid numeric department id
-    $department = (int)($_GET['department'] ?? 0);
-
-    if ($department <= 0) {
-        echo json_encode([]);
+    $user_id = (int) $_GET['id'];
+    if ($user_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid ID']);
         exit;
     }
-    
+
     $sql = "
-        SELECT u.id, u.name
+        SELECT 
+            u.id,
+            u.name,
+            u.address,
+            u.contact,
+            u.gender,
+            w.position,
+            w.department,
+            w.date_hired
         FROM users u
-        JOIN work_details w ON u.id = w.user_id
-        WHERE w.department = ?
-        ORDER BY u.name
+        LEFT JOIN work_details w ON w.user_id = u.id
+        WHERE u.id = ?
+        LIMIT 1
     ";
 
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        echo json_encode(['error' => 'prepare_failed', 'message' => $conn->error]);
-        exit;
-    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$user_id]);
+    $emp = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $stmt->bind_param("i", $department);
-    if (!$stmt->execute()) {
-        echo json_encode(['error' => 'execute_failed', 'message' => $stmt->error]);
-        exit;
-    }
-
-    $res = $stmt->get_result();
-
-    $data = [];
-    if ($res) {
-        while ($row = $res->fetch_assoc()) {
-            $data[] = $row;
-        }
-    }
-
-    echo json_encode($data);
+    echo json_encode($emp ?: []);
     exit;
 }
 
-/* ============================
-   GENERATE COE
-============================ */
-$coeData = null;
-$logoPath = '';
+/* =========================
+   Load employees
+========================= */
+$emps = $pdo->query("
+    SELECT 
+        u.id,
+        u.name,
+        w.department,
+        w.position,
+        w.date_hired
+    FROM users u
+    LEFT JOIN work_details w ON w.user_id = u.id
+    WHERE u.status = 'active'
+    ORDER BY u.name
+")->fetchAll(PDO::FETCH_ASSOC);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $user_id = (int)$_POST['user_id'];
-    $title   = $_POST['title'];
-
-    // Logo upload
-    if (!empty($_FILES['logo']['name'])) {
-        $logoPath = 'assets/logos/' . time() . '_' . $_FILES['logo']['name'];
-        move_uploaded_file($_FILES['logo']['tmp_name'], $logoPath);
-    }
-
-    $sql = "
-        SELECT u.name, u.address, u.contact,
-               w.position, d.department AS department, w.date_hired
-        FROM users u
-        JOIN work_details w ON u.id = w.user_id
-        LEFT JOIN departments d ON d.id = w.department
-        WHERE u.id = ?
-    ";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $coeData = $stmt->get_result()->fetch_assoc();
-}
-
-/* ============================
-   LOAD DEPARTMENTS
-============================ */
-$departments = $conn->query("SELECT id, department FROM departments ORDER BY department");
+/* =========================
+   Load departments
+========================= */
+$depts = $pdo->query("
+    SELECT DISTINCT department 
+    FROM work_details
+    ORDER BY department
+")->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Certificate of Employment</title>
-    <style>
-        body { font-family: Arial; }
-        select, input, button { width: 100%; padding: 8px; margin-bottom: 10px; }
-        .container { width: 800px; margin: auto; }
+<?php include __DIR__ . '/layout/HEADER'; ?>
+<?php include __DIR__ . '/layout/NAVIGATION'; ?>
 
-        .cert {
-            border: 2px solid #000;
-            padding: 40px;
-            margin-top: 30px;
-            font-family: "Times New Roman";
-        }
-        .center { text-align: center; }
+<style>
+/* ===== COE PAPER STYLE ===== */
+#preview {
+    max-width: 800px;
+    margin: auto;
+    padding: 40px;
+    border: 1px solid #000;
+    font-family: "Times New Roman", serif;
+    font-size: 16px;
+}
 
-        @media print {
-            form, button { display: none; }
-        }
-    </style>
-</head>
-<body>
+/* Centered content container used for both screen preview and print */
+.coe-content {
+    width: 800px;
+    padding: 50px;
+    box-sizing: border-box;
+    margin: 0 auto;
+}
 
-<div class="container">
+/* ===== PRINT SETTINGS ===== */
+@media print {
+    body * {
+        visibility: hidden;
+    }
 
-<h2>Generate Certificate of Employment</h2>
+    #preview, #preview * {
+        visibility: visible;
+    }
 
-<form method="POST" enctype="multipart/form-data">
+    /* Make the preview area full page but center the certificate content */
+    #preview {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        border: none;
+        box-sizing: border-box;
+        overflow: visible;
+        font-size: 16px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
 
-    <input type="text" name="title" placeholder="Certificate Title" required>
+    /* Ensure the content itself is centered and avoids page breaks */
+    #preview .coe-content {
+        margin-top: 20px;
+    }
 
-    <input type="file" name="logo" accept="image/*">
+    /* Remove any unwanted margins from paragraphs */
+    #preview p {
+        margin: 8px 0;
+    }
 
-    <select id="department" name="department_id" required>
-        <option value="">Select Department</option>
-        <?php while ($d = $departments->fetch_assoc()): ?>
-            <option value="<?= $d['id'] ?>"><?= htmlspecialchars($d['department']) ?></option>
-        <?php endwhile; ?>
-    </select>
+    /* Optional: prevent page break inside */
+    #preview h2, #preview .coe-content {
+        page-break-inside: avoid;
+    }
+}
+</style>
 
-    <select name="user_id" id="employee" required>
-        <option value="">Select Employee</option>
-    </select>
+<div id="layoutSidenav_content">
+    <main class="container-fluid px-4">
+        <div class="container">
+            <br>
+            <h3>Certificate of Employment Generator</h3>
 
-    <button type="submit">Generate Certificate</button>
-</form>
+            <div class="row g-2 mt-3">
 
-<?php if ($coeData): ?>
-    <button onclick="window.print()">PRINT</button>
+                <div class="col-md-3">
+                    <label>Department</label>
+                    <select id="dept_select" class="form-select" onchange="filterEmployees()">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
 
-    <!-- FRONT PAGE -->
-    <div class="cert">
-        <?php if ($logoPath): ?>
-            <div class="center">
-                <img src="<?= $logoPath ?>" height="80">
+                <div class="col-md-3">
+                    <label>Employee</label>
+                    <select id="employee_select" class="form-select" onchange="onEmployeeChange()">
+                        <option value="">-- Select Employee --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Name</label>
+                    <input type="text" id="emp_name" class="form-control" readonly>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Position</label>
+                    <input type="text" id="emp_position" class="form-control" readonly>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Date Hired</label>
+                    <input type="text" id="emp_date_hired" class="form-control" readonly>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Authorized Name</label>
+                    <input type="text" id="auth_name" class="form-control" placeholder="e.g. Juan Dela Cruz">
+                </div>
+
+                <div class="col-md-3">
+                    <label>Authorized Position</label>
+                    <input type="text" id="auth_position" class="form-control" placeholder="HR Manager">
+                </div>
+
+                <div class="col-md-3">
+                    <label>Authorized Signature</label>
+                    <input type="file" id="auth_signature" class="form-control" accept="image/*">
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="generateCOE()" disabled id="generate_btn">
+                        Generate COE
+                    </button>
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="printCOE()" disabled id="print_btn">
+                        Print COE
+                    </button>
+                </div>
             </div>
-        <?php endif; ?>
 
-        <h2 class="center"><?= strtoupper($title) ?></h2>
+            <div id="preview" style="display:none; margin-top:30px;"></div>
 
-        <p>
-            This is to certify that <b><?= $coeData['name'] ?></b> is presently
-            employed with the company under the <b><?= $coeData['department'] ?></b>
-            department as <b><?= $coeData['position'] ?></b> since
-            <b><?= date('F d, Y', strtotime($coeData['date_hired'])) ?></b>.
-        </p>
+            <script>
+                const EMPLOYEES = <?= json_encode($emps) ?>;
+                const DEPARTMENTS = <?= json_encode($depts) ?>;
 
-        <p>
-            This certificate is issued upon the request of the employee
-            for whatever legal purpose it may serve.
-        </p>
+                // current selected employee gender (string)
+                let emp_gender = '';
 
-        <br><br>
-        <p>Issued this <?= date('F d, Y') ?>.</p>
+                function populateDepartments() {
+                    const sel = document.getElementById('dept_select');
+                    DEPARTMENTS.forEach(d => {
+                        const o = document.createElement('option');
+                        o.value = d;
+                        o.textContent = d;
+                        sel.appendChild(o);
+                    });
+                }
 
-        <br><br>
-        <p>
-            ___________________________<br>
-            HR Manager
-        </p>
-    </div>
+                function populateEmployees(filter = '') {
+                    const sel = document.getElementById('employee_select');
+                    sel.innerHTML = '<option value="">-- Select Employee --</option>';
 
-    <!-- BACK PAGE -->
-    <div class="cert">
-        <h3 class="center">Employee Information</h3>
-        <p><b>Name:</b> <?= $coeData['name'] ?></p>
-        <p><b>Address:</b> <?= $coeData['address'] ?></p>
-        <p><b>Contact:</b> <?= $coeData['contact'] ?></p>
-        <p><b>Department:</b> <?= $coeData['department'] ?></p>
-        <p><b>Position:</b> <?= $coeData['position'] ?></p>
-    </div>
-<?php endif; ?>
+                    EMPLOYEES
+                        .filter(e => !filter || e.department === filter)
+                        .forEach(e => {
+                            const o = document.createElement('option');
+                            o.value = e.id;
+                            o.textContent = e.name;
+                            sel.appendChild(o);
+                        });
+                }
 
+                function filterEmployees() {
+                    populateEmployees(document.getElementById('dept_select').value);
+                    clearFields();
+                }
+
+                function clearFields() {
+                    emp_name.value = '';
+                    emp_position.value = '';
+                    emp_date_hired.value = '';
+                    emp_gender = '';
+                    generate_btn.disabled = true;
+                    print_btn.disabled = true;
+                    preview.style.display = 'none';
+                    preview.innerHTML = '';
+                }
+
+                function onEmployeeChange() {
+                    const id = employee_select.value;
+                    if (!id) return clearFields();
+
+                    fetch(`?id=${id}`)
+                        .then(r => r.json())
+                        .then(d => {
+                            if (!d.id) return clearFields();
+
+                            emp_name.value = d.name;
+                            emp_position.value = d.position;
+                            emp_date_hired.value = new Date(d.date_hired).toLocaleDateString();
+                            emp_gender = (d.gender || '').toString(); // store gender string
+
+                            generate_btn.disabled = false;
+                        });
+                }
+
+                function generateCOE() {
+                    const authName = auth_name.value;
+                    const authPosition = auth_position.value;
+
+                    preview.style.display = 'block';
+                    const g = (emp_gender || '').toString().toLowerCase();
+                    const pronoun = g === 'female' ? 'She' : (g === 'male' ? 'He' : 'They');
+
+                    preview.innerHTML = `
+                    <div class="coe-content">
+                        <h2 style="text-align:center;">CERTIFICATE OF EMPLOYMENT</h2>
+
+                        <p style="text-align:justify;">
+                            This is to certify that <strong>${escape(emp_name.value)}</strong>
+                            is currently employed with our company as a
+                            <strong>${escape(emp_position.value)}</strong>.
+                        </p>
+
+                        <p style="text-align:justify;">
+                            ${pronoun} has been employed since
+                            <strong>${escape(emp_date_hired.value)}</strong>.
+                        </p>
+
+                        <p style="text-align:justify;">
+                            Issued this ${new Date().toLocaleDateString()} for whatever legal
+                            purpose it may serve.
+                        </p>
+
+                        <br><br><br>
+
+                        <div style="text-align:left;">
+                            ${signatureDataURL ? `<img src="${signatureDataURL}" style="height:60px;"><br>` : ''}
+                            <strong>${escape(auth_name.value)}</strong><br>
+                            ${escape(auth_position.value)}
+                        </div>
+                    </div>
+                    `;
+                    print_btn.disabled = false;
+                }
+
+                function printCOE() {
+                    window.print();
+                }
+
+                function escape(s) {
+                    return String(s).replace(/[&<>"']/g, m =>
+                        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+                    );
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    populateDepartments();
+                    populateEmployees();
+                });
+
+                let signatureDataURL = '';
+
+                document.getElementById('auth_signature').addEventListener('change', function () {
+                    const file = this.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = e => signatureDataURL = e.target.result;
+                    reader.readAsDataURL(file);
+                });
+            </script>
+
+        </div>
+    </main>
+    <?php include __DIR__ . '/layout/FOOTER.php'; ?>
 </div>
-
-<script>
-document.getElementById('department').addEventListener('change', function () {
-    const url = `GENERATE_COE-TEST.php?ajax=employees&department=${encodeURIComponent(this.value)}`;
-    console.log('Fetching employees from', url);
-    fetch(url)
-        .then(res => res.text().then(text => {
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status} - ${text}`);
-            }
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                throw new Error('Invalid JSON response: ' + text);
-            }
-        }))
-        .then(data => {
-            if (data && data.error) {
-                console.error('Employee fetch error:', data);
-                alert('Error fetching employees: ' + (data.message || data.error));
-                return;
-            }
-
-            let emp = document.getElementById('employee');
-            emp.innerHTML = '<option value="">Select Employee</option>';
-            data.forEach(e => {
-                emp.innerHTML += `<option value="${e.id}">${e.name}</option>`;
-            });
-        })
-        .catch(err => {
-            console.error('Employee fetch failed:', err);
-            alert('Error fetching employees: ' + err.message);
-        });
-});
-</script>
-
-</body>
-</html>

@@ -1,9 +1,22 @@
 // Set new default font family and font color to mimic Bootstrap's default styling
-Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
-Chart.defaults.global.defaultFontColor = '#292b2c';
+if (typeof Chart !== 'undefined' && Chart.defaults) {
+    // Chart.js v3+ uses Chart.defaults.font.family and Chart.defaults.color
+    if (Chart.defaults.font) {
+        Chart.defaults.font.family = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+    } else if (Chart.defaults.global) {
+        Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+    }
+
+    if (typeof Chart.defaults.color !== 'undefined') {
+        Chart.defaults.color = '#292b2c';
+    } else if (Chart.defaults.global) {
+        Chart.defaults.global.defaultFontColor = '#292b2c';
+    }
+}
 
 // Area Chart Example
 var ctx = document.getElementById("myAreaChart");
+if (ctx && typeof Chart !== 'undefined') {
 var myLineChart = new Chart(ctx, {
   type: 'line',
   data: {
@@ -52,3 +65,4 @@ var myLineChart = new Chart(ctx, {
     }
   }
 });
+}

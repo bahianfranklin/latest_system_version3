@@ -1,9 +1,21 @@
 // Set new default font family and font color to mimic Bootstrap's default styling
-Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
-Chart.defaults.global.defaultFontColor = '#292b2c';
+if (typeof Chart !== 'undefined' && Chart.defaults) {
+    if (Chart.defaults.font) {
+        Chart.defaults.font.family = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+    } else if (Chart.defaults.global) {
+        Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+    }
+
+    if (typeof Chart.defaults.color !== 'undefined') {
+        Chart.defaults.color = '#292b2c';
+    } else if (Chart.defaults.global) {
+        Chart.defaults.global.defaultFontColor = '#292b2c';
+    }
+}
 
 // Bar Chart Example
 var ctx = document.getElementById("myBarChart");
+if (ctx && typeof Chart !== 'undefined') {
 var myLineChart = new Chart(ctx, {
   type: 'bar',
   data: {
@@ -44,3 +56,4 @@ var myLineChart = new Chart(ctx, {
     }
   }
 });
+}
