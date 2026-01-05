@@ -27,7 +27,7 @@
         $password = trim($_POST['password']);
 
         $stmt = $conn->prepare("
-            SELECT id, name, address, contact, birthday, email, username, role, status, profile_pic, password
+            SELECT id, name, address, contact, birthday, email, username, role_id, status, profile_pic, password
             FROM users 
             WHERE username = ?
         ");
@@ -45,8 +45,9 @@
                 // ⚠️ Check if password is hashed or plain text
                 if (password_verify($password, $user['password']) || $password === $user['password']) {
                     // ✅ Save user info to session
-                    $_SESSION['user'] = $user;
+                    $_SESSION['user']    = $user;
                     $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['role_id'] = $user['role_id']; // ✅ ADD THIS
 
                     // ✅ Insert login history
                     $ip = $_SERVER['REMOTE_ADDR'];

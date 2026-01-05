@@ -9,7 +9,12 @@ if (file_exists(__DIR__ . '/AUDIT.php')) {
   require_once __DIR__ . '/AUDIT.php';
 }
 
-$user_id = $_SESSION['user_id'] ?? 1;
+if (!isset($_SESSION['user']['id'])) {
+    header("Location: LOGIN.php");
+    exit;
+}
+
+$user_id = (int) $_SESSION['user']['id'];
 
 // Debug: Check if user_id is set
 if (empty($_SESSION['user_id'])) {

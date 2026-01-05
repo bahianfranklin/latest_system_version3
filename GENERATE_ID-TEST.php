@@ -452,3 +452,17 @@ $depts = $pdo->query("
         <?php include __DIR__ . '/layout/FOOTER.php'; ?>
     </main>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const body = document.body;
+        const sidebarToggle = document.querySelector("#sidebarToggle");
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener("click", function (e) {
+                e.preventDefault();
+                body.classList.toggle("sb-sidenav-toggled");
+            });
+        }
+    });
+</script>
