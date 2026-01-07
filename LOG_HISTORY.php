@@ -1,8 +1,20 @@
 <?php
-    session_start();
-    require 'db.php';  
-    require 'audit.php';
-    require 'autolock.php';
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    require_once __DIR__ . '/db.php';
+    require_once __DIR__ . '/rbac.php';
+    require_once __DIR__ . '/permissions.php';
+    require_once __DIR__ . '/autolock.php';
+    require_once __DIR__ . '/audit.php';
+
+    /* 🔐 RBAC GUARD */
+    if (!canView('log_history')) {
+        http_response_code(403);
+        exit('Access Denied');
+    }
 
     if (!isset($_SESSION['user'])) {
         header("Location: LOGIN.php");

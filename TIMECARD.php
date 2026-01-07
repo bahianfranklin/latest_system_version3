@@ -1,15 +1,26 @@
 <?php
 // ✅ Prevent output before headers
 ob_start();
-session_start();
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require 'db.php';
-require 'audit.php';
-require 'autolock.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/rbac.php';
+require_once __DIR__ . '/audit.php';
+require_once __DIR__ . '/permissions.php';
+require_once __DIR__ . '/autolock.php';
+
+/* 🔐 RBAC GUARD */
+if (!canView('directory')) {
+    http_response_code(403);
+    exit('Access Denied');
+}
 
 // ✅ Redirect if not logged in
 if (!isset($_SESSION['user'])) {
