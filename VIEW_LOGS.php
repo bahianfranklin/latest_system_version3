@@ -10,7 +10,7 @@
     require_once __DIR__ . '/autolock.php';
 
     /* 🔐 RBAC GUARD */
-    if (!canView('directory')) {
+    if (!canView('')) {
         http_response_code(403);
         exit('Access Denied');
     }

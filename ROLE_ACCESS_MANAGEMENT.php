@@ -1,5 +1,4 @@
 <?php
-session_start(); // FIX: Start session before anything else
 require 'db.php';
 
 // Get all roles
@@ -56,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['module'])) {
 
     // Set message and redirect to avoid resubmission
     $_SESSION['message'] = 'Access updated successfully!';
-    header("Location: " . $_SERVER['PHP_SELF'] . "?role_id=" . $role_id);
+    header("Location: USER_MAINTENANCE.php?maintenanceTabs=role_access_management&role_id=" . $role_id);
     exit();
 }
 ?>
@@ -74,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['module'])) {
             <h3 class="mb-4">Role Access Management</h3>
 
             <!-- Select Role -->
-            <form method="post">
+            <form method="post" action="USER_MAINTENANCE.php?maintenanceTabs=role_access_management">
                 <div class="mb-3">
                     <label for="role_id" class="form-label">Select Role</label>
                     <select name="role_id" id="role_id" class="form-select" required onchange="this.form.submit()">
@@ -94,7 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['module'])) {
                     : (isset($_POST['role_id']) ? intval($_POST['role_id']) : 0);
             if (!empty($current_role)): 
             ?>
-                <form method="post">
+                <form method="post" action="ROLE_ACCESS_MANAGEMENT.php">
+                    <input type="hidden" name="role_access_action" value="save">
                     <input type="hidden" name="role_id" value="<?= $current_role ?>">
 
                     <table class="table table-bordered align-middle">
