@@ -23,11 +23,11 @@
     require_once __DIR__ . '/permissions.php';
     require_once __DIR__ . '/autolock.php';
 
-    /* 🔐 RBAC GUARD */
-    if (!canView('directory')) {
-        http_response_code(403);
-        exit('Access Denied');
-    }
+    // /* 🔐 RBAC GUARD */
+    // if (!canView('')) {
+    //     http_response_code(403);
+    //     exit('Access Denied');
+    // }
 
     // ✅ Ensure logged in
     if (!isset($_SESSION['user_id'])) {
