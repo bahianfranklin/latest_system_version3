@@ -6808,6 +6808,23 @@ textarea.form-control-lg {
   z-index: 1030;
 }
 
+/* Ensure fixed elements remain visible in fullscreen mode */
+:-webkit-full-screen .fixed-top,
+:-webkit-full-screen .sb-nav-fixed #layoutSidenav #layoutSidenav_nav,
+:-webkit-full-screen .sb-nav-fixed .sb-topnav,
+:-moz-full-screen .fixed-top,
+:-moz-full-screen .sb-nav-fixed #layoutSidenav #layoutSidenav_nav,
+:-moz-full-screen .sb-nav-fixed .sb-topnav,
+:fullscreen .fixed-top,
+:fullscreen .sb-nav-fixed #layoutSidenav #layoutSidenav_nav,
+:fullscreen .sb-nav-fixed .sb-topnav {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  z-index: 1030 !important;
+}
+
 .fixed-bottom {
   position: fixed;
   right: 0;
@@ -10934,6 +10951,20 @@ body {
   top: 56px;
 }
 
+/* Ensure navigation elements remain visible in fullscreen mode */
+:-webkit-full-screen .sb-nav-fixed .sb-topnav,
+:-moz-full-screen .sb-nav-fixed .sb-topnav,
+:fullscreen .sb-nav-fixed .sb-topnav {
+  display: block !important;
+  visibility: visible !important;
+}
+
+:-webkit-full-screen .sb-nav-fixed #layoutSidenav #layoutSidenav_nav,
+:-moz-full-screen .sb-nav-fixed #layoutSidenav #layoutSidenav_nav,
+:fullscreen .sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
+  display: block !important;
+  visibility: visible !important;
+}
 #layoutError {
   display: flex;
   flex-direction: column;
@@ -10961,6 +10992,24 @@ body {
   height: 56px;
   z-index: 1039;
 }
+
+/* Ensure navbar is visible in fullscreen mode */
+:-webkit-full-screen .sb-topnav,
+:-moz-full-screen .sb-topnav,
+:fullscreen .sb-topnav,
+.sb-topnav:-webkit-full-screen,
+.sb-topnav:-moz-full-screen,
+.sb-topnav:fullscreen,
+body:-webkit-full-screen .sb-topnav,
+body:-moz-full-screen .sb-topnav,
+body:fullscreen .sb-topnav,
+#layoutSidenav_content:-webkit-full-screen .sb-topnav,
+#layoutSidenav_content:-moz-full-screen .sb-topnav,
+#layoutSidenav_content:fullscreen .sb-topnav {
+  display: block !important;
+  visibility: visible !important;
+}
+
 .sb-topnav .navbar-brand {
   width: 225px;
   margin: 0;

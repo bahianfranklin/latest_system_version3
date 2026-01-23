@@ -10,8 +10,8 @@
     $SYSTEM_LOGO   = $sys['system_logo'] ?? "";
     $SYSTEM_FOOTER = $sys['system_footer'] ?? "";
 
-    $logoPath = (!empty($SYSTEM_LOGO) && file_exists(__DIR__ . "/uploads/" . $SYSTEM_LOGO))
-        ? "uploads/" . $SYSTEM_LOGO
+    $logoPath = (!empty($SYSTEM_LOGO) && file_exists(__DIR__ . "/uploads/logos/" . $SYSTEM_LOGO))
+        ? "uploads/logos/" . $SYSTEM_LOGO
         : "uploads/default_logo.png";
 
     // audit helper (defines logAction)

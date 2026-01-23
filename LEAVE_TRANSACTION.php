@@ -46,7 +46,7 @@
                         <th>Value</th>
                         <th>Remarks</th>
                         <th>Date/Time Created</th>
-                        <th>Created By</th>
+                        <th>Approved By</th>
                     </tr>
                 </thead>
                 <tbody id="leaveTableBody">
@@ -66,36 +66,77 @@ function loadLeaveTransactions() {
     const type = document.getElementById("leaveType").value;
     const search = document.getElementById("searchBox").value;
 
-        fetch(`leave_transaction_data.php?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}&search=${encodeURIComponent(search)}`)
-        .then(response => response.json())
-        .then(data => {
-            const tbody = document.getElementById("leaveTableBody");
-            tbody.innerHTML = "";
+    console.log("Loading with:", { year, type, search });
 
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center">No records found</td></tr>`;
-                return;
+    fetch(`leave_transaction_data.php?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}&search=${encodeURIComponent(search)}`)
+        .then(response => {
+            console.log("Response status:", response.status);
+            return response.text(); // Use text() to see what's actually returned
+        })
+        .then(text => {
+            console.log("Raw response:", text);
+            try {
+                const data = JSON.parse(text);
+                console.log("Parsed data:", data);
+                
+                const tbody = document.getElementById("leaveTableBody");
+                tbody.innerHTML = "";
+
+                if (data.error) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: ${data.error}</td></tr>`;
+                    return;
+                }
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center">No records found</td></tr>`;
+                    return;
+                }
+
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${row.leave_type || 'N/A'}</td>
+                        <td>${row.transaction_type || 'N/A'}</td>
+                        <td>${row.credit_value || 'N/A'}</td>
+                        <td>${row.remarks || 'N/A'}</td>
+                        <td>${row.date_applied || 'N/A'}</td>
+                        <td>${row.created_by || 'N/A'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("JSON parse error:", e);
+                document.getElementById("leaveTableBody").innerHTML = `<tr><td colspan="6" class="text-center text-danger">Parse Error: ${e.message}</td></tr>`;
             }
-
-            data.forEach(row => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${row.leave_type}</td>
-                    <td>${row.transaction_type}</td>
-                    <td>${row.credit_value}</td>
-                    <td>${row.remarks}</td>
-                    <td>${row.date_applied}</td>
-                    <td>${row.created_by}</td>
-                `;
-                tbody.appendChild(tr);
-            });
         })
         .catch(err => {
-            console.error("Error loading data:", err);
+            console.error("Fetch error:", err);
+            document.getElementById("leaveTableBody").innerHTML = `<tr><td colspan="6" class="text-center text-danger">Fetch Error: ${err.message}</td></tr>`;
         });
 }
 </script>
 
 <!-- Optional: Flatpickr -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script
+
+<script>
+// Load data on page load
+document.addEventListener("DOMContentLoaded", function() {
+    loadLeaveTransactions();
+});
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const body = document.body;
+        const sidebarToggle = document.querySelector("#sidebarToggle");
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener("click", function (e) {
+                e.preventDefault();
+                body.classList.toggle("sb-sidenav-toggled");
+            });
+        }
+    });
+</script>
+

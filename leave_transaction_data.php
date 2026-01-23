@@ -1,54 +1,60 @@
 <?php
+// Set JSON header FIRST before any output
+header('Content-Type: application/json');
+
+// Start output buffering to capture any unexpected output
+ob_start();
+
 session_start();
+
+// Suppress any output from required files
+$error_reporting = error_reporting(E_ALL);
+ini_set('display_errors', '0');
+
 require 'db.php';
+
+// Restore error reporting
+error_reporting($error_reporting);
+ini_set('display_errors', '1');
+
+// Clear any buffered output from required files
+ob_clean();
+
+// Re-enable output buffering for our JSON
+ob_start();
+
 require 'audit.php';
 require 'autolock.php';
 
-if (!isset($_SESSION['user'])) {
-    echo json_encode([]);
+// Clear buffered output
+ob_clean();
+
+// Check if user is logged in
+if (!isset($_SESSION['user']) || !isset($_SESSION['user']['id'])) {
+    echo json_encode(['error' => 'unauthenticated']);
+    ob_end_flush();
     exit();
 }
 
-$user_id = $_SESSION['user']['id'];
+$user_id = (int) $_SESSION['user']['id'];
 
-$year   = $_GET['year'] ?? '';
-$type   = $_GET['type'] ?? '';
-$search = $_GET['search'] ?? '';
+// Get filter parameters
+$year   = isset($_GET['year']) && $_GET['year'] !== '' ? (int)$_GET['year'] : null;
+$type   = isset($_GET['type']) && $_GET['type'] !== '' ? $_GET['type'] : null;
+$search = isset($_GET['search']) ? trim($_GET['search']) : null;
 
 // Build description for audit logs
-$desc = "Filters -> Year: " . ($year !== "" ? $year : "All") .
-        ", Type: " . ($type !== "" ? $type : "All") .
-        ", Search: " . ($search !== "" ? $search : "None");
+$desc = "Filters -> Year: " . ($year !== null ? $year : "All") .
+        ", Type: " . ($type !== null ? $type : "All") .
+        ", Search: " . (!empty($search) ? $search : "None");
 
-// 🔥 Audit log entry
+// Audit log entry
 logAction(
     $conn,
     $user_id,
     "FILTER LEAVE TRANSACTIONS",
     $desc
 );
-
-header('Content-Type: application/json');
-
-// Ensure session is available and user is authenticated
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-require_once __DIR__ . '/db.php';
-
-// require login
-if (!isset($_SESSION['user']['id'])) {
-    echo json_encode(['error' => 'unauthenticated']);
-    exit;
-}
-
-$user_id = (int) $_SESSION['user']['id'];
-
-// Read and sanitize inputs
-$year   = isset($_GET['year']) && $_GET['year'] !== '' ? (int)$_GET['year'] : null;
-$type   = isset($_GET['type']) && $_GET['type'] !== '' ? $_GET['type'] : null;
-$search = isset($_GET['search']) ? trim($_GET['search']) : null;
 
 // Build base query
 $sql = "
@@ -61,11 +67,11 @@ $sql = "
         u.name AS created_by
     FROM leave_requests lr
     LEFT JOIN users u ON lr.approver_id = u.id
-    WHERE 1=1
+    WHERE lr.user_id = ?
 ";
 
-$params = [];
-$types  = '';
+$params = [$user_id];
+$types  = 'i';
 
 // Filter by year
 if ($year !== null) {
@@ -91,29 +97,26 @@ if (!empty($search)) {
     $types .= 'sss';
 }
 
-// Restrict to current logged-in user
-$sql .= " AND lr.user_id = ?";
-$params[] = $user_id;
-$types .= 'i';
-
 // Final sorting
 $sql .= " ORDER BY lr.date_applied DESC";
 
-// Prepare statement
+// Prepare and execute statement
 $stmt = $conn->prepare($sql);
 if ($stmt === false) {
-    echo json_encode(['error' => $conn->error]);
+    ob_clean();
+    echo json_encode(['error' => 'Prepare error: ' . $conn->error]);
+    ob_end_flush();
     exit;
 }
 
 // Bind parameters dynamically
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
-}
+$stmt->bind_param($types, ...$params);
 
 // Execute query
 if (!$stmt->execute()) {
-    echo json_encode(['error' => $stmt->error]);
+    ob_clean();
+    echo json_encode(['error' => 'Execute error: ' . $stmt->error]);
+    ob_end_flush();
     exit;
 }
 
@@ -121,5 +124,10 @@ if (!$stmt->execute()) {
 $res = $stmt->get_result();
 $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 
+// Clear any remaining buffered output
+ob_clean();
+
 // Output as JSON
 echo json_encode($data);
+ob_end_flush();
+?>

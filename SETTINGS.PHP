@@ -8,37 +8,49 @@ $settings = $q->fetch_assoc();
 
 /* If table empty, create default row */
 if (!$settings) {
-    $conn->query("INSERT INTO system_settings (id, system_title, system_footer, system_logo)
-                  VALUES (1, 'My System', '© 2025 My System', '')");
+    $conn->query("
+        INSERT INTO system_settings 
+        (id, system_title, system_footer, system_logo, company_name)
+        VALUES 
+        (1, 'My System', '© 2025 My System', '', 'My Company')
+    ");
+
     $q = $conn->query("SELECT * FROM system_settings WHERE id = 1");
     $settings = $q->fetch_assoc();
 }
 
-$SYSTEM_TITLE  = $settings['system_title'];
-$SYSTEM_FOOTER = $settings['system_footer'];
-$SYSTEM_LOGO   = $settings['system_logo'];
+$SYSTEM_TITLE   = $settings['system_title'];
+$SYSTEM_FOOTER  = $settings['system_footer'];
+$SYSTEM_LOGO    = $settings['system_logo'];
+$COMPANY_NAME   = $settings['company_name'];
 
 /* 2. Update settings when form is submitted */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $logo_name = $SYSTEM_LOGO; // keep old logo if no new upload
+    $logo_name = $SYSTEM_LOGO;
 
     if (!empty($_FILES['system_logo']['name'])) {
         $logo_name = time() . "_" . $_FILES['system_logo']['name'];
-        move_uploaded_file($_FILES['system_logo']['tmp_name'], "uploads/" . $logo_name);
+        move_uploaded_file($_FILES['system_logo']['tmp_name'], "uploads/logos/" . $logo_name);
     }
 
     $stmt = $conn->prepare("
         UPDATE system_settings 
-        SET system_title = ?, system_footer = ?, system_logo = ?
+        SET system_title = ?, 
+            company_name = ?, 
+            system_footer = ?, 
+            system_logo = ?
         WHERE id = 1
     ");
 
-    $stmt->bind_param("sss",
+    $stmt->bind_param(
+        "ssss",
         $_POST['system_title'],
+        $_POST['company_name'],
         $_POST['system_footer'],
         $logo_name
     );
+
     $stmt->execute();
 
     header("Location: settings.php?success=1");
@@ -74,6 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" name="company_name" class="form-control"
+                                value="<?= htmlspecialchars($COMPANY_NAME) ?>" required>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">System Footer</label>
                             <textarea name="system_footer" class="form-control" rows="3" required><?= htmlspecialchars($SYSTEM_FOOTER) ?></textarea>
                         </div>
@@ -86,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php if (!empty($SYSTEM_LOGO)): ?>
                             <div class="mb-3">
                                 <label>Current Logo:</label><br>
-                                <img src="uploads/<?= htmlspecialchars($SYSTEM_LOGO) ?>" height="80" class="img-thumbnail">
+                                <img src="uploads/logos/<?= htmlspecialchars($SYSTEM_LOGO) ?>" height="80" class="img-thumbnail">
                             </div>
                         <?php endif; ?>
 
