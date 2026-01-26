@@ -38,6 +38,7 @@ $reports_pages = ['TIMECARD.PHP', 'TARDINESS_REPORT.PHP', 'LEAVE_CREDIT_MONITORI
 $reports_active = in_array($current_page, $reports_pages);
 
 $hr_pages = [
+    'HR_APPROVER_MAINTENANCE.PHP',
     'GENERATE_ID-TEST.PHP',
     'GENERATE_COE-TEST.PHP',
     'LOG_HISTORY-MULTIPLE_USER.PHP',
@@ -233,7 +234,7 @@ $hr_approving_active = in_array($current_page, $hr_approving_pages);
 
                     <div class="collapse <?= $hr_active ? 'show' : '' ?>" id="collapseHRModules" data-bs-parent="#sidenavAccordion">
                         <nav class="sb-sidenav-menu-nested nav">
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER.PHP') ? 'active' : '' ?>" href="HR_APPROVER.PHP">Assigned HR Approvers</a>
+                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_MAINTENANCE.PHP') ? 'active' : '' ?>" href="HR_APPROVER_MAINTENANCE.PHP">Assigned HR Approvers</a>
                             <a class="nav-link <?= ($current_page == 'GENERATE_ID-TEST.PHP') ? 'active' : '' ?>" href="GENERATE_ID-TEST.PHP">Generation of ID</a>
                             <a class="nav-link <?= ($current_page == 'GENERATE_COE-TEST.PHP') ? 'active' : '' ?>" href="GENERATE_COE-TEST.PHP">Generation of COE</a>
                             <a class="nav-link <?= ($current_page == 'LOG_HISTORY-MULTIPLE_USER.PHP') ? 'active' : '' ?>" href="LOG_HISTORY-MULTIPLE_USER.PHP">Log History(Multiple Users)</a>
