@@ -23,13 +23,17 @@
  
     /** ========== ADD ========= */
     if (isset($_POST['action']) && $_POST['action'] === 'add') {
-        $ot_date      = $_POST['date'];
-        $from_time    = $_POST['from_time'];
-        $to_time      = $_POST['to_time'];
-        $purpose      = $_POST['purpose'];
+        $ot_date      = $_POST['date'] ?? '';
+        $from_time    = $_POST['from_time'] ?? '';
+        $to_time      = $_POST['to_time'] ?? '';
+        $purpose      = $_POST['purpose'] ?? '';
 
         // ✅ Radio button → single string (no array)
         $work_schedule= $_POST['work_schedule'] ?? "";
+
+        if (empty($ot_date) || empty($from_time) || empty($to_time) || empty($purpose)) {
+            die("All fields are required!");
+        }
 
         $today = date("Ymd");
         $res = $conn->query("SELECT COUNT(*) as total FROM overtime WHERE DATE(datetime_applied)=CURDATE()");
@@ -38,14 +42,25 @@
         $appNo = "OT-" . $today . "-" . str_pad($countToday, 2, "0", STR_PAD_LEFT);
 
         $stmt = $conn->prepare("INSERT INTO overtime 
-            (application_no, date, from_time, to_time, purpose, work_schedule, applied_by) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)");
+            (application_no, date, from_time, to_time, purpose, work_schedule, applied_by, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')");
+        
+        if (!$stmt) {
+            die("SQL Error: " . $conn->error);
+        }
+        
         $stmt->bind_param("ssssssi", $appNo, $ot_date, $from_time, $to_time, $purpose, $work_schedule, $user_id);
-        $stmt->execute();
-
-        // 🔥 AUDIT TRAIL FOR ADDING OVERTIME
-        logAction($conn, $user_id, "ADD OVERTIME", "Applied OT: $appNo | $ot_date $from_time-$to_time | $purpose | $work_schedule");
-
+        
+        if ($stmt->execute()) {
+            // 🔥 AUDIT TRAIL FOR ADDING OVERTIME
+            logAction($conn, $user_id, "ADD OVERTIME", "Applied OT: $appNo | $ot_date $from_time-$to_time | $purpose | $work_schedule");
+            
+            // Redirect with success message
+            header("Location: OVERTIME.php?success=Overtime request submitted successfully");
+            exit;
+        } else {
+            die("Failed to insert overtime: " . $stmt->error);
+        }
     }
 
     /** ========== EDIT ========= */
@@ -136,6 +151,14 @@
         <div id="layoutSidenav_content">
             <main class="container-fluid px-4">
             <br>
+            
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>✅ Success!</strong> <?= htmlspecialchars($_GET['success']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
             <div class="d-flex justify-content-between mb-3">
                 <h3>Overtime Requests</h3>
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">+ Apply Overtime</button>

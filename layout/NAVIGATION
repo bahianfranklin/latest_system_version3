@@ -51,7 +51,7 @@ $hr_active = in_array($current_page, $hr_pages);
 
 
 $hr_approving_pages = [
-    'HR_PENDING_LEAVES.PHP', 'HR_APPROVER_OVERTIME.PHP', 'HR_APPROVER_OFFICIAL_BUSINESS.PHP',
+    'HR_LEAVE_APPROVAL.PHP', 'HR_OVERTIME_APPROVAL.PHP', 'HR_APPROVER_OFFICIAL_BUSINESS.PHP',
     'HR_APPROVER_CHANGE_SCHEDULE.PHP', 'HR_APPROVER_FAILURE_CLOCK.PHP',
     'HR_APPROVER_CLOCK_ALTERATION.PHP', 'HR_APPROVER_WORK_RESTDAY.PHP'
 ];
@@ -258,8 +258,8 @@ $hr_approving_active = in_array($current_page, $hr_approving_pages);
 
                     <div class="collapse <?= $hr_approving_active ? 'show' : '' ?>" id="collapse_HR_Approving" data-bs-parent="#sidenavAccordion">
                         <nav class="sb-sidenav-menu-nested nav">
-                            <a class="nav-link <?= ($current_page == 'HR_PENDING_LEAVES.PHP') ? 'active' : '' ?>" href="HR_PENDING_LEAVES.PHP">Leave Application</a>
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_OVERTIME.PHP') ? 'active' : '' ?>" href="HR_APPROVER_OVERTIME.PHP">Overtime</a>
+                            <a class="nav-link <?= ($current_page == 'HR_LEAVE_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_LEAVE_APPROVAL.PHP">Leave Application</a>
+                            <a class="nav-link <?= ($current_page == 'HR_OVERTIME_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_OVERTIME_APPROVAL.PHP">Overtime</a>
                             <a class="nav-link <?= ($current_page == 'HR_APPROVER_OFFICIAL_BUSINESS.PHP') ? 'active' : '' ?>" href="HR_APPROVER_OFFICIAL_BUSINESS.PHP">Official Business</a>
                             <a class="nav-link <?= ($current_page == 'HR_APPROVER_CHANGE_SCHEDULE.PHP') ? 'active' : '' ?>" href="HR_APPROVER_CHANGE_SCHEDULE.PHP">Change Schedule</a>
                             <a class="nav-link <?= ($current_page == 'HR_APPROVER_FAILURE_CLOCK.PHP') ? 'active' : '' ?>" href="HR_APPROVER_FAILURE_CLOCK.PHP">Failure to Clock</a>

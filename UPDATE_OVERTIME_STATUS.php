@@ -22,10 +22,10 @@ if (!in_array($new_status, ['Approved', 'Rejected'], true)) {
     die("Invalid status value");
 }
 
-/* ✅ UPDATE OVERTIME STATUS */
+/* ✅ UPDATE OVERTIME STATUS + APPROVER */
 $stmt = $conn->prepare("
     UPDATE overtime
-    SET status = ?, datetime_action = NOW()
+    SET status = ?, approver_id = ?, datetime_action = NOW()
     WHERE application_no = ?
 ");
 
@@ -33,7 +33,7 @@ if (!$stmt) {
     die("SQL Error: " . $conn->error);
 }
 
-$stmt->bind_param("ss", $new_status, $application_no);
+$stmt->bind_param("sis", $new_status, $approver_id, $application_no);
 
 if (!$stmt->execute()) {
     die("Update failed: " . $stmt->error);
