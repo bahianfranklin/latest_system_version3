@@ -14,6 +14,27 @@ if (!isset($_SESSION['user']) || !is_array($_SESSION['user'])) {
 
 $user = $_SESSION['user'];
 
+// ✅ Check if user is an approver
+$is_hr_approver = false;
+
+if (isset($_SESSION['user_id'])) {
+    $uid = (int) $_SESSION['user_id'];
+
+    $stmt = $conn->prepare("
+        SELECT 1
+        FROM hr_approver_assignments
+        WHERE user_id = ?
+        LIMIT 1
+    ");
+    $stmt->bind_param("i", $uid);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows > 0) {
+        $is_hr_approver = true;
+    }
+}
+
 ob_start(); // Add this here to buffer any accidental early output
 
 // ✅ Get current page
@@ -51,9 +72,9 @@ $hr_active = in_array($current_page, $hr_pages);
 
 
 $hr_approving_pages = [
-    'HR_LEAVE_APPROVAL.PHP', 'HR_OVERTIME_APPROVAL.PHP', 'HR_APPROVER_OFFICIAL_BUSINESS.PHP',
-    'HR_APPROVER_CHANGE_SCHEDULE.PHP', 'HR_APPROVER_FAILURE_CLOCK.PHP',
-    'HR_APPROVER_CLOCK_ALTERATION.PHP', 'HR_APPROVER_WORK_RESTDAY.PHP'
+    'HR_LEAVE_APPROVAL.PHP', 'HR_OVERTIME_APPROVAL.PHP', 'HR_OFFICIAL_BUSINESS_APPROVAL.PHP',
+    'HR_CHANGE_SCHEDULE_APPROVAL.PHP', 'HR_FAILURE_CLOCK.PHP',
+    'HR_CLOCK_ALTERATION.PHP', 'HR_WORK_RESTDAY.PHP'
 ];
 $hr_approving_active = in_array($current_page, $hr_approving_pages);
 ?>
@@ -247,26 +268,28 @@ $hr_approving_active = in_array($current_page, $hr_approving_pages);
                     </div>
 
                     <!-- ======================= HR APPROVING ======================= -->
-                    <a class="nav-link <?= $hr_approving_active ? 'active-parent' : 'collapsed' ?>"
-                        href="#" data-bs-toggle="collapse"
-                        data-bs-target="#collapse_HR_Approving"
-                        aria-expanded="<?= $hr_approving_active ? 'true' : 'false' ?>">
-                        <div class="sb-nav-link-icon"><i class="fas fa-check-circle"></i></div>
-                        HR Approving
-                        <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                    </a>
+                    <?php if ($is_hr_approver): ?>
+                        <a class="nav-link <?= $hr_approving_active ? 'active-parent' : 'collapsed' ?>"
+                            href="#" data-bs-toggle="collapse"
+                            data-bs-target="#collapse_HR_Approving"
+                            aria-expanded="<?= $hr_approving_active ? 'true' : 'false' ?>">
+                            <div class="sb-nav-link-icon"><i class="fas fa-check-circle"></i></div>
+                            HR Approving
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
 
-                    <div class="collapse <?= $hr_approving_active ? 'show' : '' ?>" id="collapse_HR_Approving" data-bs-parent="#sidenavAccordion">
-                        <nav class="sb-sidenav-menu-nested nav">
-                            <a class="nav-link <?= ($current_page == 'HR_LEAVE_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_LEAVE_APPROVAL.PHP">Leave Application</a>
-                            <a class="nav-link <?= ($current_page == 'HR_OVERTIME_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_OVERTIME_APPROVAL.PHP">Overtime</a>
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_OFFICIAL_BUSINESS.PHP') ? 'active' : '' ?>" href="HR_APPROVER_OFFICIAL_BUSINESS.PHP">Official Business</a>
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_CHANGE_SCHEDULE.PHP') ? 'active' : '' ?>" href="HR_APPROVER_CHANGE_SCHEDULE.PHP">Change Schedule</a>
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_FAILURE_CLOCK.PHP') ? 'active' : '' ?>" href="HR_APPROVER_FAILURE_CLOCK.PHP">Failure to Clock</a>
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_CLOCK_ALTERATION.PHP') ? 'active' : '' ?>" href="HR_APPROVER_CLOCK_ALTERATION.PHP">Clock Alteration</a>
-                            <a class="nav-link <?= ($current_page == 'HR_APPROVER_WORK_RESTDAY.PHP') ? 'active' : '' ?>" href="HR_APPROVER_WORK_RESTDAY.PHP">Work Restday</a>
-                        </nav>
-                    </div>
+                        <div class="collapse <?= $hr_approving_active ? 'show' : '' ?>" id="collapse_HR_Approving" data-bs-parent="#sidenavAccordion">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link <?= ($current_page == 'HR_LEAVE_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_LEAVE_APPROVAL.PHP">Leave Application</a>
+                                <a class="nav-link <?= ($current_page == 'HR_OVERTIME_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_OVERTIME_APPROVAL.PHP">Overtime</a>
+                                <a class="nav-link <?= ($current_page == 'HR_OFFICIAL_BUSINESS_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_OFFICIAL_BUSINESS_APPROVAL.PHP">Official Business</a>
+                                <a class="nav-link <?= ($current_page == 'HR_CHANGE_SCHEDULE_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_CHANGE_SCHEDULE_APPROVAL.PHP">Change Schedule</a>
+                                <a class="nav-link <?= ($current_page == 'HR_FAILURE_CLOCK_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_FAILURE_CLOCK_APPROVAL.PHP">Failure to Clock</a>
+                                <a class="nav-link <?= ($current_page == 'HR_CLOCK_ALTERATION_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_CLOCK_ALTERATION_APPROVAL.PHP">Clock Alteration</a>
+                                <a class="nav-link <?= ($current_page == 'HR_WORK_RESTDAY_APPROVAL.PHP') ? 'active' : '' ?>" href="HR_WORK_RESTDAY_APPROVAL.PHP">Work Restday</a>
+                            </nav>
+                        </div>
+                    <?php endif; ?>
                     
                     <!-- ======================= SYSTEM SETTING ======================= -->
                     <?php if (canView('system_settings')): ?>

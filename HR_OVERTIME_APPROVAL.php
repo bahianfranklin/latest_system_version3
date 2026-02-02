@@ -8,6 +8,18 @@ if (!$approver_id) {
     die("Not logged in");
 }
 
+// Check if user is an assigned HR approver
+$stmt = $conn->prepare("
+    SELECT 1 FROM hr_approver_assignments WHERE user_id = ? LIMIT 1
+");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$stmt->store_result();
+
+if ($stmt->num_rows === 0) {
+    die("Access denied");
+}
+
 // Fetch current user info
 $user_id = (int) $_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
@@ -200,8 +212,8 @@ $rejected = $stmt3->get_result();
                             <th>To</th>
                             <th>Purpose</th>
                             <th>Work Schedule</th>
-                            <th>Status</th>
                             <th>Approved By</th>
+                            <th>Status</th>
                             <th>Date Action</th>
                         </tr>
                     </thead>
@@ -221,8 +233,8 @@ $rejected = $stmt3->get_result();
                             <td><?= $row['to_time'] ?></td>
                             <td><?= $row['purpose'] ?></td>
                             <td><?= $row['work_schedule'] ?></td>
-                            <td><span class="badge bg-success"><?= $row['status'] ?></span></td>
                             <td><?= $row['approved_by'] ?></td>
+                            <td><span class="badge bg-success"><?= $row['status'] ?></span></td>
                             <td><?= $row['datetime_action'] ?></td>
                         </tr>
                         <?php endwhile; ?>
@@ -251,8 +263,8 @@ $rejected = $stmt3->get_result();
                             <th>To</th>
                             <th>Purpose</th>
                             <th>Work Schedule</th>
-                            <th>Status</th>
                             <th>Rejected By</th>
+                            <th>Status</th>
                             <th>Date Action</th>
                         </tr>
                     </thead>
@@ -272,8 +284,8 @@ $rejected = $stmt3->get_result();
                             <td><?= htmlspecialchars($row['to_time']) ?></td>
                             <td><?= htmlspecialchars($row['purpose']) ?></td>
                             <td><?= htmlspecialchars($row['work_schedule']) ?></td>
-                            <td><span class="badge bg-danger"><?= htmlspecialchars($row['status']) ?></span></td>
                             <td><?= htmlspecialchars($row['rejected_by']) ?></td>
+                            <td><span class="badge bg-danger"><?= htmlspecialchars($row['status']) ?></span></td>
                             <td><?= htmlspecialchars($row['datetime_action']) ?></td>
                         </tr>
                         <?php endwhile; ?>

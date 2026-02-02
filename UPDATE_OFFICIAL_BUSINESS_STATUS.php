@@ -22,10 +22,12 @@ if (!in_array($new_status, ['Approved', 'Rejected'], true)) {
     die("Invalid status value");
 }
 
-/* ✅ UPDATE OFFICIAL BUSINESS */
+/* ✅ UPDATE OFFICIAL BUSINESS WITH APPROVER ID */
 $stmt = $conn->prepare("
     UPDATE official_business
-    SET status = ?, datetime_action = NOW()
+    SET status = ?, 
+        approved_by = ?, 
+        datetime_action = NOW()
     WHERE application_no = ?
 ");
 
@@ -33,7 +35,7 @@ if (!$stmt) {
     die("SQL Error: " . $conn->error);
 }
 
-$stmt->bind_param("ss", $new_status, $application_no);
+$stmt->bind_param("sis", $new_status, $approver_id, $application_no);
 
 if (!$stmt->execute()) {
     die("Update failed: " . $stmt->error);
