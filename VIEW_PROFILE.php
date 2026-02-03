@@ -41,10 +41,10 @@ if (!$userQuery) {
 $userQuery->bind_param("i", $user_id);
 $userQuery->execute();
 $userResult = $userQuery->get_result();
-$user = $userResult->fetch_assoc();
+$view_user = $userResult->fetch_assoc();
 
 // Debug: If no user found, show error
-if (!$user) {
+if (!$view_user) {
     die("Error: User ID " . intval($user_id) . " not found in the database. Please check your session or log in again.");
 }
 
@@ -112,14 +112,14 @@ logAction($conn, $user_id, "VIEW PROFILE", "User view his full profile data");
       <div class="container mt-4 p-4 bg-white rounded shadow">
         <div class="d-flex align-items-center">
           <?php
-            $profilePath = (!empty($user['profile_pic']) && file_exists(__DIR__ . '/uploads/' . $user['profile_pic']))
-              ? 'uploads/' . $user['profile_pic']
+            $profilePath = (!empty($view_user['profile_pic']) && file_exists(__DIR__ . '/uploads/' . $view_user['profile_pic']))
+              ? 'uploads/' . $view_user['profile_pic']
               : 'uploads/img_temp.png';
           ?>
           <img src="<?= htmlspecialchars($profilePath) ?>" 
               alt="Profile Picture" width="120" height="120" class="rounded-circle border">
           <div class="ms-4 flex-grow-1">
-          <h3 class="fw-bold mb-2"><?= strtoupper(htmlspecialchars($user['name'])) ?></h3>
+          <h3 class="fw-bold mb-2"><?= strtoupper(htmlspecialchars($view_user['name'])) ?></h3>
 
           <div class="row mb-1">
             <div class="col-md-4"><b>Branch:</b> <?= htmlspecialchars($work['branch'] ?? '') ?></div>
@@ -133,7 +133,7 @@ logAction($conn, $user_id, "VIEW PROFILE", "User view his full profile data");
           </div>
 
           <div class="row mb-1">
-            <div class="col-md-4"><b>Address:</b> <?= htmlspecialchars($user['address'] ?? '') ?></div>
+            <div class="col-md-4"><b>Address:</b> <?= htmlspecialchars($view_user['address'] ?? '') ?></div>
             <div class="col-md-4"><b>Position:</b> <?= htmlspecialchars($work['position'] ?? '') ?></div>
             <div class="col-md-4"><b>Status:</b> <?= htmlspecialchars($work['status_desc'] ?? '') ?></div>
           </div>
@@ -174,28 +174,28 @@ logAction($conn, $user_id, "VIEW PROFILE", "User view his full profile data");
         <div class="tab-pane fade show active" id="personal" role="tabpanel">
           <table class="table table-bordered">
             <tr><th>Employee ID</th><td><?= htmlspecialchars($work['employee_no'] ?? '') ?></td></tr>
-            <tr><th>Full Name</th><td><?= htmlspecialchars($user['full_name'] ?? $user['name'] ?? '') ?></td></tr>
-            <tr><th>Gender</th><td><?= htmlspecialchars($user['gender'] ?? '') ?></td></tr>
-            <tr><th>Civil Status</th><td><?= htmlspecialchars($user['civil_status'] ?? '') ?></td></tr>
-            <tr><th>Nationality</th><td><?= htmlspecialchars($user['nationality'] ?? '') ?></td></tr>
-            <tr><th>Religion</th><td><?= htmlspecialchars($user['religion'] ?? '') ?></td></tr>
-            <tr><th>Date of Birth</th><td><?= htmlspecialchars($user['birthday'] ?? '') ?></td></tr>
-            <tr><th>Place of Birth</th><td><?= htmlspecialchars($user['place_of_birth'] ?? '') ?></td></tr>
-            <tr><th>Age</th><td><?= htmlspecialchars($user['age'] ?? '') ?></td></tr>
-            <tr><th>Mobile No.</th><td><?= htmlspecialchars($user['mobile_no'] ?? '') ?></td></tr>
-            <tr><th>Contact</th><td><?= htmlspecialchars($user['contact'] ?? '') ?></td></tr>
-            <tr><th>Email Address</th><td><?= htmlspecialchars($user['email'] ?? '') ?></td></tr>
-            <tr><th>Address</th><td><?= htmlspecialchars($user['address'] ?? '') ?></td></tr>
-            <tr><th>Region</th><td><?= htmlspecialchars($user['region'] ?? '') ?></td></tr>
-            <tr><th>Province</th><td><?= htmlspecialchars($user['province'] ?? '') ?></td></tr>
-            <tr><th>City/Municipality</th><td><?= htmlspecialchars($user['city_municipality'] ?? '') ?></td></tr>
-            <tr><th>Contact Person</th><td><?= htmlspecialchars($user['contact_person'] ?? '') ?></td></tr>
-            <tr><th>Relationship</th><td><?= htmlspecialchars($user['contact_person_relationship'] ?? '') ?></td></tr>
-            <tr><th>Contact Person Address</th><td><?= htmlspecialchars($user['contact_person_address'] ?? '') ?></td></tr>
-            <tr><th>Contact Person Contact No.</th><td><?= htmlspecialchars($user['contact_person_contact'] ?? '') ?></td></tr>
-            <tr><th>Mother's Name</th><td><?= htmlspecialchars($user['mother_name'] ?? '') ?></td></tr>
-            <tr><th>Father's Name</th><td><?= htmlspecialchars($user['father_name'] ?? '') ?></td></tr>
-            <tr><th>Status</th><td><?= htmlspecialchars(ucfirst($user['status'] ?? '')) ?></td></tr>
+            <tr><th>Full Name</th><td><?= htmlspecialchars($view_user['full_name'] ?? $view_user['name'] ?? '') ?></td></tr>
+            <tr><th>Gender</th><td><?= htmlspecialchars($view_user['gender'] ?? '') ?></td></tr>
+            <tr><th>Civil Status</th><td><?= htmlspecialchars($view_user['civil_status'] ?? '') ?></td></tr>
+            <tr><th>Nationality</th><td><?= htmlspecialchars($view_user['nationality'] ?? '') ?></td></tr>
+            <tr><th>Religion</th><td><?= htmlspecialchars($view_user['religion'] ?? '') ?></td></tr>
+            <tr><th>Date of Birth</th><td><?= htmlspecialchars($view_user['birthday'] ?? '') ?></td></tr>
+            <tr><th>Place of Birth</th><td><?= htmlspecialchars($view_user['place_of_birth'] ?? '') ?></td></tr>
+            <tr><th>Age</th><td><?= htmlspecialchars($view_user['age'] ?? '') ?></td></tr>
+            <tr><th>Mobile No.</th><td><?= htmlspecialchars($view_user['mobile_no'] ?? '') ?></td></tr>
+            <tr><th>Contact</th><td><?= htmlspecialchars($view_user['contact'] ?? '') ?></td></tr>
+            <tr><th>Email Address</th><td><?= htmlspecialchars($view_user['email'] ?? '') ?></td></tr>
+            <tr><th>Address</th><td><?= htmlspecialchars($view_user['address'] ?? '') ?></td></tr>
+            <tr><th>Region</th><td><?= htmlspecialchars($view_user['region'] ?? '') ?></td></tr>
+            <tr><th>Province</th><td><?= htmlspecialchars($view_user['province'] ?? '') ?></td></tr>
+            <tr><th>City/Municipality</th><td><?= htmlspecialchars($view_user['city_municipality'] ?? '') ?></td></tr>
+            <tr><th>Contact Person</th><td><?= htmlspecialchars($view_user['contact_person'] ?? '') ?></td></tr>
+            <tr><th>Relationship</th><td><?= htmlspecialchars($view_user['contact_person_relationship'] ?? '') ?></td></tr>
+            <tr><th>Contact Person Address</th><td><?= htmlspecialchars($view_user['contact_person_address'] ?? '') ?></td></tr>
+            <tr><th>Contact Person Contact No.</th><td><?= htmlspecialchars($view_user['contact_person_contact'] ?? '') ?></td></tr>
+            <tr><th>Mother's Name</th><td><?= htmlspecialchars($view_user['mother_name'] ?? '') ?></td></tr>
+            <tr><th>Father's Name</th><td><?= htmlspecialchars($view_user['father_name'] ?? '') ?></td></tr>
+            <tr><th>Status</th><td><?= htmlspecialchars(ucfirst($view_user['status'] ?? '')) ?></td></tr>
           </table>
         </div>
 
