@@ -25,13 +25,19 @@ if (!in_array($new_status, ['Approved', 'Rejected'], true)) {
 $stmtCheck = $conn->prepare("
     SELECT 1
     FROM change_schedule cs
-    JOIN users u ON cs.applied_by = u.id
-    JOIN work_details wd ON u.id = wd.user_id
-    JOIN departments d ON wd.department = d.id
-    JOIN hr_approver_assignments aa 
-        ON (aa.department_id = d.id OR aa.work_detail_id = wd.id)
-    WHERE cs.application_no = ? AND aa.user_id = ?
+    JOIN work_details wd ON cs.applied_by = wd.user_id
+    LEFT JOIN departments d ON wd.department = d.department
+    LEFT JOIN hr_approver_assignments aa 
+        ON aa.work_detail_id = wd.work_detail_id
+        OR aa.department_id = d.id
+    WHERE cs.application_no = ?
+    AND aa.user_id = ?
 ");
+
+if (!$stmtCheck) {
+    die("Prepare failed: " . $conn->error);
+}
+
 $stmtCheck->bind_param("si", $application_no, $approver_id);
 $stmtCheck->execute();
 $stmtCheck->store_result();
@@ -61,6 +67,6 @@ $description  = "Change Schedule application {$application_no} was {$new_status}
 logAction($conn, $approver_id, $audit_action, $description);
 
 /* ✅ REDIRECT */
-header("Location: approver_change_schedule.php?msg=success");
+header("Location: HR_CHANGE_SCHEDULE_APPROVAL.PHP?msg=success");
 exit;
 ?>

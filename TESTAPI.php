@@ -2,62 +2,25 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+include("CONFIG_2.php");   // Make sure API_KEY and COMPANY_KEY are defined here
 include("WEBLIB.php");
 
 $url = "https://api.mandbox.com/apitest/v1/contact.php?action=view";
 
-
-
 $weblib = new WebLib();
 
-$params=array("fullname"=>"NEW NAME 1", "address"=>"NEW ADDRESS 1", "record_id"=>331);
+$params = array(
+    "fullname" => "NEW NAME 2",
+    "address" => "NEW ADDRESS 2",
+    "record_id" => 331
+);
 
-$weblib->requestURL($url,$params);
+// Send the request
+$weblib->requestURL($url, $params);
 
-echo $weblib->getRawResponse();
+// Get the raw response
+echo "RESULT: " . $weblib->getRawResponse();
 
-//echo "RESULT: ".$weblib->status();
-
-echo $weblib->getKeyValue("contact_no","data"); 
-exit;
-if($weblib->status()=='ok'){
-    foreach($weblib->resultData() as $data){
-        echo "ID: ".$data->id." : ".$data->fullname."<br/>";
-    }
-}else{
-    echo "ERROR: ".$weblib->message();
-}
-
-$weblib=NULL;
-
-
-
-/*$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-
-echo $response;
-exit;
-
-$response=str_replace("<pre>","",$response);
-$response=str_replace("</pre>","",$response);
-
-$jsonDecoded = json_decode($response);
-
-$jsonInit = $jsonDecoded->init;
-$jsonData = $jsonDecoded->data;
-
-//echo "<pre>";
-//print_r($jsonInit);
-//echo "</pre>";
-
-echo "STATUS: " . $jsonInit[0]->status . "<br>";
-
-foreach($jsonData as $data) {
-    //echo "ID: " . $data->id . "<br>";
-}*/
-
-
+// Example: get a specific field from the JSON response
+echo "<br>Details: " . $weblib->getKeyValue("contact_no", "data");
 ?>

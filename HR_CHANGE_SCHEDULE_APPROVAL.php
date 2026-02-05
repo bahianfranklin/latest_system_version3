@@ -42,10 +42,7 @@ $stmt = $conn->prepare($sqlPending);
 $stmt->execute();
 $pending = $stmt->get_result();
 
-
-/**
- * 🔹 Approved Change Schedule Requests
- */
+// Approved Requests
 $sqlApproved = "
 SELECT 
     cs.application_no,
@@ -55,25 +52,21 @@ SELECT
     cs.remarks,
     cs.total_hours,
     cs.status,
-    cs.datetime_action
+    cs.datetime_action,
+    hr.name AS approved_by
 FROM change_schedule cs
 JOIN users u ON cs.applied_by = u.id
 JOIN work_details wd ON wd.user_id = u.id
-JOIN hr_approver_assignments aa 
-    ON aa.department_id = u.department_id
+LEFT JOIN users hr ON hr.id = cs.approved_by
 WHERE cs.status = 'Approved'
-AND aa.user_id = ?
 ORDER BY cs.datetime_action DESC
 ";
 
 $stmt2 = $conn->prepare($sqlApproved);
-$stmt2->bind_param("i", $approver_id);
 $stmt2->execute();
 $approved = $stmt2->get_result();
 
-/**
- * 🔹 Rejected Change Schedule Requests
- */
+// Rejected Requests
 $sqlRejected = "
 SELECT 
     cs.application_no,
@@ -83,19 +76,17 @@ SELECT
     cs.remarks,
     cs.total_hours,
     cs.status,
-    cs.datetime_action
+    cs.datetime_action,
+    hr.name AS approved_by
 FROM change_schedule cs
 JOIN users u ON cs.applied_by = u.id
 JOIN work_details wd ON wd.user_id = u.id
-JOIN hr_approver_assignments aa 
-    ON aa.department_id = u.department_id
+LEFT JOIN users hr ON hr.id = cs.approved_by
 WHERE cs.status = 'Rejected'
-AND aa.user_id = ?
 ORDER BY cs.datetime_action DESC
 ";
 
 $stmt3 = $conn->prepare($sqlRejected);
-$stmt3->bind_param("i", $approver_id);
 $stmt3->execute();
 $rejected = $stmt3->get_result();
 
@@ -144,12 +135,12 @@ $rejected = $stmt3->get_result();
                                 <td><span class="badge bg-warning text-dark"><?= htmlspecialchars($row['status']) ?></span></td>
                                 <td><?= htmlspecialchars($row['datetime_applied']) ?></td>
                                 <td class="d-flex gap-1">
-                                    <form method="POST" action="UPDATE_CHANGE_SCHEDULE_HR.php">
+                                    <form method="POST" action="UPDATE_CHANGE_SCHEDULE_STATUS_HR.php">
                                         <input type="hidden" name="application_no" value="<?= htmlspecialchars($row['application_no']) ?>">
                                         <input type="hidden" name="action" value="Approved">
                                         <button type="submit" class="btn btn-success btn-sm">Approve</button>
                                     </form>
-                                    <form method="POST" action="UPDATE_CHANGE_SCHEDULE_HR.php">
+                                    <form method="POST" action="UPDATE_CHANGE_SCHEDULE_STATUS_HR.php">
                                         <input type="hidden" name="application_no" value="<?= htmlspecialchars($row['application_no']) ?>">
                                         <input type="hidden" name="action" value="Rejected">
                                         <button type="submit" class="btn btn-danger btn-sm">Reject</button>
@@ -179,6 +170,7 @@ $rejected = $stmt3->get_result();
                                 <th>Date</th>
                                 <th>Remarks</th>
                                 <th>Total Hours</th>
+                                <th>Approved By</th>
                                 <th>Status</th>
                                 <th>Date Action</th>
                             </tr>
@@ -192,6 +184,7 @@ $rejected = $stmt3->get_result();
                                 <td><?= htmlspecialchars($row['date']) ?></td>
                                 <td><?= htmlspecialchars($row['remarks']) ?></td>
                                 <td><?= htmlspecialchars($row['total_hours']) ?></td>
+                                <td><?= htmlspecialchars($row['approved_by'] ?? '-') ?></td>
                                 <td><span class="badge bg-success"><?= htmlspecialchars($row['status']) ?></span></td>
                                 <td><?= htmlspecialchars($row['datetime_action']) ?></td>
                             </tr>
@@ -218,6 +211,7 @@ $rejected = $stmt3->get_result();
                                 <th>Date</th>
                                 <th>Remarks</th>
                                 <th>Total Hours</th>
+                                <th>Approved By</th>
                                 <th>Status</th>
                                 <th>Date Action</th>
                             </tr>
@@ -231,6 +225,7 @@ $rejected = $stmt3->get_result();
                                 <td><?= htmlspecialchars($row['date']) ?></td>
                                 <td><?= htmlspecialchars($row['remarks']) ?></td>
                                 <td><?= htmlspecialchars($row['total_hours']) ?></td>
+                                <td><?= htmlspecialchars($row['approved_by'] ?? '-') ?></td>
                                 <td><span class="badge bg-danger"><?= htmlspecialchars($row['status']) ?></span></td>
                                 <td><?= htmlspecialchars($row['datetime_action']) ?></td>
                             </tr>

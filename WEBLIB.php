@@ -15,6 +15,7 @@ Time Last Created:	09:01 PM
 
 */
 
+include("CONFIG_2.php");
 class WebLib{
     
     private $p_rawResponse;
@@ -120,6 +121,8 @@ class WebLib{
     
     
     public function message(){ 
+
+	$message = "yes";
         
         $data = $this->getJSONDecode();
         
