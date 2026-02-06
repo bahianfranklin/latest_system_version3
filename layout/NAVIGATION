@@ -73,8 +73,8 @@ $hr_active = in_array($current_page, $hr_pages);
 
 $hr_approving_pages = [
     'HR_LEAVE_APPROVAL.PHP', 'HR_OVERTIME_APPROVAL.PHP', 'HR_OFFICIAL_BUSINESS_APPROVAL.PHP',
-    'HR_CHANGE_SCHEDULE_APPROVAL.PHP', 'HR_FAILURE_CLOCK.PHP',
-    'HR_CLOCK_ALTERATION.PHP', 'HR_WORK_RESTDAY.PHP'
+    'HR_CHANGE_SCHEDULE_APPROVAL.PHP', 'HR_FAILURE_CLOCK_APPROVAL.PHP',
+    'HR_CLOCK_ALTERATION_APPROVAL.PHP', 'HR_WORK_RESTDAY_APPROVAL.PHP'
 ];
 $hr_approving_active = in_array($current_page, $hr_approving_pages);
 ?>
