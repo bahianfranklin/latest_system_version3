@@ -15,7 +15,8 @@ Time Last Created:	09:01 PM
 
 */
 
-include("CONFIG_2.php");
+require_once __DIR__ . "/CONFIG_2.php";   // API_KEY and COMPANY_KEY
+
 class WebLib{
     
     private $p_rawResponse;

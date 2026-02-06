@@ -2,8 +2,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-include("CONFIG_2.php");   // API_KEY and COMPANY_KEY
-include("WEBLIB.php");
+require_once __DIR__ . "/CONFIG_2.php";   // API_KEY and COMPANY_KEY
+require_once __DIR__ . "/WEBLIB.php";
 
 $url = "https://api.mandbox.com/apitest/v1/contact.php?action=view";
 
