@@ -2,63 +2,77 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once __DIR__ . "/CONFIG_2.php";   // API_KEY and COMPANY_KEY
+require_once __DIR__ . "/CONFIG_2.php";
 require_once __DIR__ . "/WEBLIB.php";
 
 $weblib = new WebLib();
 
-// VIEW: Get all contacts
 $urlView = "https://api.mandbox.com/apitest/v1/contact.php?action=view";
 
-// search
-$search = $_GET['search'] ?? '';
-
-// per page
+// GET values
+$search  = $_GET['search'] ?? '';
 $perPage = $_GET['limit'] ?? 5;
+$page    = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 
-// current page
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+// Handle "All"
+$showAll = ($perPage === "all") ? 1 : 0;
+$limit   = ($showAll) ? 0 : intval($perPage);
 
+// API parameters (DIRECT PAGINATION)
 $params = [
-    "record_id" => ""
+    "show_all"     => $showAll,
+    "record_limit" => $limit,
+    "page"         => $page,
+    "search_key"   => $search,
+    "record_id"    => ""
 ];
-//echo "$urlView?" . json_encode($params) . "<br><br>";
-$weblib->requestURL($urlView, $params);
-$dataList = $weblib->resultData() ?? [];
 
-// echo ($weblib->getRawResponse());
-// exit;
+echo "$urlView?" . json_encode($params) . "<br><br>";
+$weblib->requestURL($urlView, $params, );
 
-// Convert objects to array
-$records = json_decode(json_encode($dataList), true);
 
-// Search
-if (!empty($search)) {
-    $records = array_filter($records, function ($row) use ($search) {
-        return stripos($row['fullname'] ?? '', $search) !== false ||
-               stripos($row['address'] ?? '', $search) !== false ||
-               stripos($row['contact_no'] ?? '', $search) !== false;
-    });
+echo "API RESPONSE: " . $weblib->getRawResponse() . "<br><br>"; 
+exit;    
 
-    // Reset array keys after filtering
-    $records = array_values($records);
+
+// Get raw API response
+$response = json_decode($weblib->getRawResponse(), true);
+
+// Safety fallback
+$currentRecords = [];
+$totalRecords   = 0;
+$totalPages     = 1;
+$page           = 1;
+$offset         = 0;
+
+if (isset($response['init'][0]) && $response['init'][0]['status'] === 'ok') {
+
+    $meta = $response['init'][0];
+
+    $currentRecords = $response['data'] ?? [];
+    $totalRecords   = intval($meta['total_records'] ?? 0);
+    $totalPages     = intval($meta['page_count'] ?? 1);
+    $page           = intval($meta['current_page'] ?? 1);
+
+    $offset = ($limit > 0) ? ($page - 1) * $limit : 0;
 }
 
-// totals
-$totalRecords = count($records);
+$raw = $weblib->getRawResponse();
 
-// Pagination math
-if ($perPage === "all") {
-    $currentRecords = $records;
-    $totalPages = 1;
-    $page = 1;
-    $offset = 0;
-} else {
-    $perPage = intval($perPage);
-    $totalPages = ceil($totalRecords / $perPage);
-    $offset = ($page - 1) * $perPage;
-    $currentRecords = array_slice($records, $offset, $perPage);
+// Remove UTF-8 BOM if present
+$raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw);
+// Trim whitespace just in case
+$raw = trim($raw);
+
+// Decode and check errors
+$response = json_decode($raw, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    // Helpful debug (keep while diagnosing)
+    echo "<pre>JSON decode error: " . json_last_error_msg() . "\nRaw (first 300 chars): " 
+        . htmlspecialchars(substr($raw, 0, 300)) . "</pre>";
+    $response = null;
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -74,7 +88,7 @@ if ($perPage === "all") {
 
     <div class="container">
         <h2>Contacts List</h2>
-
+        
         <div class="row mb-3 align-items-center">
 
             <!-- Search (Left Side) -->
@@ -304,6 +318,8 @@ if ($perPage === "all") {
                     });
                 }
             });
+
+            // Handle Search
 
         });
     </script>

@@ -48,16 +48,16 @@ if (!empty($search)) {
 $totalRecords = count($records);
 
 // Pagination math
-if ($perPage === "all") {
+if ($perPage === "search") {
     $currentRecords = $records;
     $totalPages = 1;
     $page = 1;
-    $offset = 0;
+    $start_from = 0;
 } else {
     $perPage = intval($perPage);
     $totalPages = ceil($totalRecords / $perPage);
-    $offset = ($page - 1) * $perPage;
-    $currentRecords = array_slice($records, $offset, $perPage);
+    $start_from = ($page - 1) * $perPage;
+    $currentRecords = array_slice($records, $start_from, $perPage);
 }
 ?>
 
@@ -308,5 +308,4 @@ if ($perPage === "all") {
         });
     </script>
 </body>
-
 </html>
