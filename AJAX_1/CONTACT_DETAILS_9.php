@@ -36,8 +36,8 @@ $records = json_decode(json_encode($dataList), true);
 if (!empty($search)) {
     $records = array_filter($records, function ($row) use ($search) {
         return stripos($row['fullname'] ?? '', $search) !== false ||
-            stripos($row['address'] ?? '', $search) !== false ||
-            stripos($row['contact_no'] ?? '', $search) !== false;
+               stripos($row['address'] ?? '', $search) !== false ||
+               stripos($row['contact_no'] ?? '', $search) !== false;
     });
 
     // Reset array keys after filtering
@@ -80,8 +80,10 @@ if ($perPage === "search") {
             <!-- Search (Left Side) -->
             <div class="col-md-6">
                 <form method="get" class="d-flex">
-                    <input type="text" name="search" class="form-control me-2"
-                        placeholder="Search name, address or contact..." value="<?= htmlspecialchars($search) ?>">
+                    <input type="text" name="search"
+                        class="form-control me-2"
+                        placeholder="Search name, address or contact..."
+                        value="<?= htmlspecialchars($search) ?>">
 
                     <input type="hidden" name="limit" value="<?= $perPage ?>">
 
@@ -97,7 +99,9 @@ if ($perPage === "search") {
 
             <!-- Add Button (Right Side) -->
             <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">
+                <button class="btn btn-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addModal">
                     Add Contact
                 </button>
             </div>
@@ -141,7 +145,6 @@ if ($perPage === "search") {
 
     <div class="d-flex justify-content-between mt-3 flex-wrap">
         <!-- Pagination -->
-        <!-- Pagination -->
         <nav>
             <ul class="pagination">
                 <?php if ($page > 1): ?>
@@ -151,21 +154,7 @@ if ($perPage === "search") {
                     </li>
                 <?php endif; ?>
 
-                <?php
-                // Define window size (max 5 pages shown)
-                $start = max(1, $page - 2);
-                $end = min($totalPages, $page + 2);
-
-                // Adjust window if near beginning or end
-                if ($end - $start < 4) {
-                    if ($start == 1) {
-                        $end = min($start + 4, $totalPages);
-                    } else {
-                        $start = max($end - 4, 1);
-                    }
-                }
-
-                for ($i = $start; $i <= $end; $i++): ?>
+                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                     <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
                         <a class="page-link" href="?page=<?= $i ?>&limit=<?= $perPage ?>&search=<?= $search ?>">
                             <?= $i ?>
@@ -179,6 +168,7 @@ if ($perPage === "search") {
                             href="?page=<?= $page + 1 ?>&limit=<?= $perPage ?>&search=<?= $search ?>">Next</a>
                     </li>
                 <?php endif; ?>
+
             </ul>
         </nav>
 
@@ -318,5 +308,4 @@ if ($perPage === "search") {
         });
     </script>
 </body>
-
 </html>
