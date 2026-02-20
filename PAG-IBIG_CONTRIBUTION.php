@@ -95,7 +95,7 @@ if (isset($_GET['action'], $_GET['id']) && $_GET['action'] === 'delete') {
 
 <div id="layoutSidenav_content">
     <main class="container-fluid px-4">
-        <div class="container"></div>
+        <div class="container">
             <br>
             <h3>Pag-IBIG Contribution Maintenance</h3>
             <br>
@@ -121,38 +121,32 @@ if (isset($_GET['action'], $_GET['id']) && $_GET['action'] === 'delete') {
                     </tr>
                 </thead>
                 <tbody>
-                <?php
-                $result = $conn->query("SELECT * FROM pagibig_contributions ORDER BY salary_min ASC");
-                while ($row = $result->fetch_assoc()):
-                ?>
-                    <tr>
-                        <td><?= $row['class_code'] ?></td>
-                        <td>₱<?= $row['salary_min'] ?> - <?= $row['salary_max'] ?? 'Above' ?></td>
-                        <td><?= $row['employee_rate'] ?>%</td>
-                        <td><?= $row['employer_rate'] ?>%</td>
-                        <td>₱<?= $row['salary_cap'] ?? 'No Cap' ?></td>
-                        <td>
-                            <button class="btn btn-sm btn-warning"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editModal"
-                                data-id="<?= $row['id'] ?>"
-                                data-class="<?= $row['class_code'] ?>"
-                                data-min="<?= $row['salary_min'] ?>"
-                                data-max="<?= $row['salary_max'] ?>"
-                                data-emp="<?= $row['employee_rate'] ?>"
-                                data-er="<?= $row['employer_rate'] ?>"
-                                data-cap="<?= $row['salary_cap'] ?>">
-                                ✏ Edit
-                            </button>
+                    <?php
+                    $result = $conn->query("SELECT * FROM pagibig_contributions ORDER BY salary_min ASC");
+                    while ($row = $result->fetch_assoc()):
+                        ?>
+                        <tr>
+                            <td><?= $row['class_code'] ?></td>
+                            <td>₱<?= $row['salary_min'] ?> - <?= $row['salary_max'] ?? 'Above' ?></td>
+                            <td><?= $row['employee_rate'] ?>%</td>
+                            <td><?= $row['employer_rate'] ?>%</td>
+                            <td>₱<?= $row['salary_cap'] ?? 'No Cap' ?></td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal"
+                                    data-id="<?= $row['id'] ?>" data-class="<?= $row['class_code'] ?>"
+                                    data-min="<?= $row['salary_min'] ?>" data-max="<?= $row['salary_max'] ?>"
+                                    data-emp="<?= $row['employee_rate'] ?>" data-er="<?= $row['employer_rate'] ?>"
+                                    data-cap="<?= $row['salary_cap'] ?>">
+                                    ✏ Edit
+                                </button>
 
-                            <a href="?action=delete&id=<?= $row['id'] ?>"
-                            class="btn btn-sm btn-danger"
-                            onclick="return confirm('Delete this record?')">
-                                🗑 Delete
-                            </a>
-                        </td>
-                    </tr>
-                <?php endwhile; ?>
+                                <a href="?action=delete&id=<?= $row['id'] ?>" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete this record?')">
+                                    🗑 Delete
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
                 </tbody>
             </table>
 
@@ -240,7 +234,8 @@ if (isset($_GET['action'], $_GET['id']) && $_GET['action'] === 'delete') {
 
                             <div class="col-md-4">
                                 <label>Employee Rate (%)</label>
-                                <input type="number" step="0.01" name="employee_rate" id="edit_emp" class="form-control">
+                                <input type="number" step="0.01" name="employee_rate" id="edit_emp"
+                                    class="form-control">
                             </div>
 
                             <div class="col-md-4">
@@ -261,21 +256,21 @@ if (isset($_GET['action'], $_GET['id']) && $_GET['action'] === 'delete') {
                 </div>
             </div>
         </div>
-        <?php include __DIR__ . '/layout/FOOTER.php'; ?>
     </main>
+    <?php include __DIR__ . '/layout/FOOTER.php'; ?>
 </div>
 
 <script>
     document.getElementById('editModal').addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
 
-        document.getElementById('edit_id').value    = button.dataset.id;
+        document.getElementById('edit_id').value = button.dataset.id;
         document.getElementById('edit_class').value = button.dataset.class;
-        document.getElementById('edit_min').value   = button.dataset.min;
-        document.getElementById('edit_max').value   = button.dataset.max ?? '';
-        document.getElementById('edit_emp').value   = button.dataset.emp;
-        document.getElementById('edit_er').value    = button.dataset.er;
-        document.getElementById('edit_cap').value   = button.dataset.cap ?? '';
+        document.getElementById('edit_min').value = button.dataset.min;
+        document.getElementById('edit_max').value = button.dataset.max ?? '';
+        document.getElementById('edit_emp').value = button.dataset.emp;
+        document.getElementById('edit_er').value = button.dataset.er;
+        document.getElementById('edit_cap').value = button.dataset.cap ?? '';
     });
 </script>
 

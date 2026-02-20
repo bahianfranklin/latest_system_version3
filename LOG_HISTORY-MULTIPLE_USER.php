@@ -1,242 +1,249 @@
 <?php
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/rbac.php';
+require_once __DIR__ . '/audit.php';
+require_once __DIR__ . '/permissions.php';
+require_once __DIR__ . '/autolock.php';
+
+/* 🔐 RBAC GUARD */
+if (!canView('directory')) {
+    http_response_code(403);
+    exit('Access Denied');
+}
+
+if (!isset($_SESSION['user'])) {
+    header("Location: LOGIN.php");
+    exit();
+}
+
+$user = $_SESSION['user'];
+$user_id = $user['id'];  // ✅ define user_id
+
+// Get search keyword and date range from GET
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$from = isset($_GET['from']) ? trim($_GET['from']) : '';
+$to = isset($_GET['to']) ? trim($_GET['to']) : '';
+
+// Selected user from dropdown
+$selectedUser = isset($_GET['filter_user']) ? (int) $_GET['filter_user'] : 0;
+
+// --- AUDIT TRAIL FOR SEARCH ---
+if (isset($_GET['search']) || isset($_GET['from']) || isset($_GET['to'])) {
+
+    $desc = "Search filters used: ";
+
+    if ($search !== '') {
+        $desc .= "Keyword = '$search'; ";
+    }
+    if ($from !== '') {
+        $desc .= "From = $from; ";
+    }
+    if ($to !== '') {
+        $desc .= "To = $to; ";
     }
 
-    require_once __DIR__ . '/db.php';
-    require_once __DIR__ . '/rbac.php';
-    require_once __DIR__ . '/audit.php';
-    require_once __DIR__ . '/permissions.php';
-    require_once __DIR__ . '/autolock.php';
+    logAction($conn, $user_id, "Log History Search", $desc);
+}
 
-    /* 🔐 RBAC GUARD */
-    if (!canView('directory')) {
-        http_response_code(403);
-        exit('Access Denied');
-    }
-
-    if (!isset($_SESSION['user'])) {
-        header("Location: LOGIN.php");
-        exit();
-    }
-
-    $user = $_SESSION['user'];
-    $user_id = $user['id'];  // ✅ define user_id
- 
-    // Get search keyword and date range from GET
-    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-    $from = isset($_GET['from']) ? trim($_GET['from']) : '';
-    $to = isset($_GET['to']) ? trim($_GET['to']) : '';
-
-    // Selected user from dropdown
-    $selectedUser = isset($_GET['filter_user']) ? (int)$_GET['filter_user'] : 0;
-
-    // --- AUDIT TRAIL FOR SEARCH ---
-    if (isset($_GET['search']) || isset($_GET['from']) || isset($_GET['to'])) {
-
-        $desc = "Search filters used: ";
-
-        if ($search !== '') {
-            $desc .= "Keyword = '$search'; ";
-        }
-        if ($from !== '') {
-            $desc .= "From = $from; ";
-        }
-        if ($to !== '') {
-            $desc .= "To = $to; ";
-        }
-
-        logAction($conn, $user_id, "Log History Search", $desc);
-    }
-
-    // Base SQL
-    $sql = "SELECT l.id, u.name AS fullname, u.username, l.login_time, l.logout_time, l.ip_address
+// Base SQL
+$sql = "SELECT l.id, u.name AS fullname, u.username, l.login_time, l.logout_time, l.ip_address
             FROM user_logs l
             JOIN users u ON l.user_id = u.id";
 
-    // Prepare conditions
-    $conditions = [];
-    $params = [];
-    $types = '';
+// Prepare conditions
+$conditions = [];
+$params = [];
+$types = '';
 
-    // If a user is selected from dropdown, filter by that user
-    if ($selectedUser > 0) {
-        $conditions[] = "l.user_id = ?";
-        $params[] = $selectedUser;
-        $types .= 'i';
-    }
-    // else no user condition -> show logs for all users
+// If a user is selected from dropdown, filter by that user
+if ($selectedUser > 0) {
+    $conditions[] = "l.user_id = ?";
+    $params[] = $selectedUser;
+    $types .= 'i';
+}
+// else no user condition -> show logs for all users
 
-    // Add search condition
-    if ($search !== '') {
-        $conditions[] = "(u.name LIKE ? OR u.username LIKE ? OR l.ip_address LIKE ?)";
-        $likeSearch = "%$search%";
-        $params[] = $likeSearch;
-        $params[] = $likeSearch;
-        $params[] = $likeSearch;
-        $types .= 'sss';
-    }
+// Add search condition
+if ($search !== '') {
+    $conditions[] = "(u.name LIKE ? OR u.username LIKE ? OR l.ip_address LIKE ?)";
+    $likeSearch = "%$search%";
+    $params[] = $likeSearch;
+    $params[] = $likeSearch;
+    $params[] = $likeSearch;
+    $types .= 'sss';
+}
 
-    // Add date range conditions
-    if ($from !== '') {
-        $conditions[] = "l.login_time >= ?";
-        $params[] = $from . " 00:00:00";
-        $types .= 's';
-    }
-    if ($to !== '') {
-        $conditions[] = "l.login_time <= ?";
-        $params[] = $to . " 23:59:59";
-        $types .= 's';
-    }
+// Add date range conditions
+if ($from !== '') {
+    $conditions[] = "l.login_time >= ?";
+    $params[] = $from . " 00:00:00";
+    $types .= 's';
+}
+if ($to !== '') {
+    $conditions[] = "l.login_time <= ?";
+    $params[] = $to . " 23:59:59";
+    $types .= 's';
+}
 
-    // Combine conditions
-    if (!empty($conditions)) {
-        $sql .= " WHERE " . implode(" AND ", $conditions);
-    }
+// Combine conditions
+if (!empty($conditions)) {
+    $sql .= " WHERE " . implode(" AND ", $conditions);
+}
 
-    $sql .= " ORDER BY l.login_time DESC";
+$sql .= " ORDER BY l.login_time DESC";
 
-    // Prepare statement
-    $stmt = $conn->prepare($sql);
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
+// Prepare statement
+$stmt = $conn->prepare($sql);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 
-    $stmt->execute();
-    $result = $stmt->get_result();
+$stmt->execute();
+$result = $stmt->get_result();
 
-    // --- PAGINATION SETUP ---
-    // Get limit per page (default 10)
-    $perPage = isset($_GET['limit']) ? $_GET['limit'] : 5;
-    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+// --- PAGINATION SETUP ---
+// Get limit per page (default 10)
+$perPage = isset($_GET['limit']) ? $_GET['limit'] : 5;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 
-    // Clone SQL for counting total records
-    $countSql = "SELECT COUNT(*) as total FROM user_logs l JOIN users u ON l.user_id = u.id";
-    if (!empty($conditions)) {
-        $countSql .= " WHERE " . implode(" AND ", $conditions);
-    }
+// Clone SQL for counting total records
+$countSql = "SELECT COUNT(*) as total FROM user_logs l JOIN users u ON l.user_id = u.id";
+if (!empty($conditions)) {
+    $countSql .= " WHERE " . implode(" AND ", $conditions);
+}
 
-    $countStmt = $conn->prepare($countSql);
-    if (!empty($params)) {
-        $countStmt->bind_param($types, ...$params);
-    }
-    $countStmt->execute();
-    $countResult = $countStmt->get_result();
-    $totalRecords = $countResult->fetch_assoc()['total'];
+$countStmt = $conn->prepare($countSql);
+if (!empty($params)) {
+    $countStmt->bind_param($types, ...$params);
+}
+$countStmt->execute();
+$countResult = $countStmt->get_result();
+$totalRecords = $countResult->fetch_assoc()['total'];
 
-    // Compute total pages
-    if ($perPage === "all") {
-        $totalPages = 1;
-        $offset = 0;
-    } else {
-        $perPage = intval($perPage);
-        $totalPages = ceil($totalRecords / $perPage);
-        $offset = ($page - 1) * $perPage;
-    }
+// Compute total pages
+$totalPages = ($perPage === "all") ? 1 : ceil($totalRecords / intval($perPage));
+$offset = ($perPage === "all") ? 0 : ($page - 1) * intval($perPage);
 
-    // Final SQL with LIMIT
-    $sql .= ($perPage === "all") ? "" : " LIMIT $offset, $perPage";
+// Default values for pagination window
+$startPage = 1;
+$endPage = $totalPages;
 
-    $stmt = $conn->prepare($sql);
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
+// Window pagination only if not "all"
+if ($perPage !== "all") {
+    $range = 5; // how many page numbers to show
+    $startPage = floor(($page - 1) / $range) * $range + 1;
+    $endPage = min($startPage + $range - 1, $totalPages);
+}
 
-    $userQuery = $conn->prepare("SELECT * FROM users WHERE id = ?");
-    $userQuery->bind_param("i", $user_id);
-    $userQuery->execute();
-    $user = $userQuery->get_result()->fetch_assoc();
+// Final SQL with LIMIT
+$sql .= ($perPage === "all") ? "" : " LIMIT $offset, $perPage";
 
-    // Fetch users for dropdown
-    $usersResult = $conn->query("SELECT id, name FROM users ORDER BY name ASC");
+$stmt = $conn->prepare($sql);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+
+$userQuery = $conn->prepare("SELECT * FROM users WHERE id = ?");
+$userQuery->bind_param("i", $user_id);
+$userQuery->execute();
+$user = $userQuery->get_result()->fetch_assoc();
+
+// Fetch users for dropdown
+$usersResult = $conn->query("SELECT id, name FROM users ORDER BY name ASC");
 ?>
 
-    <?php include __DIR__ . '/layout/HEADER'; ?>
-    <?php include __DIR__ . '/layout/NAVIGATION'; ?>
+<?php include __DIR__ . '/layout/HEADER'; ?>
+<?php include __DIR__ . '/layout/NAVIGATION'; ?>
 
-    <!-- Bootstrap & Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<!-- Bootstrap & Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
-    <!-- Custom Styles -->
-    <link href="css/styles.css" rel="stylesheet" />
+<!-- Custom Styles -->
+<link href="css/styles.css" rel="stylesheet" />
 
-    <!-- Sidebar Toggle CSS -->
-    <style>
-        #layoutSidenav {
-            display: flex;
-        }
-        #layoutSidenav_nav {
-            width: 250px;
-            flex-shrink: 0;
-            transition: margin-left 0.3s ease;
-        }
-        #layoutSidenav_content {
-            flex-grow: 1;
-            min-width: 0;
-            transition: margin-left 0.3s ease;
-        }
-    </style>
+<!-- Sidebar Toggle CSS -->
+<style>
+    #layoutSidenav {
+        display: flex;
+    }
 
-    <div id="layoutSidenav_content">
-        <main>
-            <div class="container-fluid px-4">
-                <br>
-                <h4>Login / Logout History (Multiple Users)</h4>
-                <br>
-                <!-- Search form with From/To dates -->
-                <form method="get" class="mb-3 row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label><strong><em>Keyword</em></strong></label>
-                        <input type="text" name="search" class="form-control" placeholder="Search by name, username, or IP" value="<?= htmlspecialchars($search) ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <label><strong><em>From:</em></strong></label>
-                        <input type="date" name="from" class="form-control" value="<?= htmlspecialchars($from) ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <label><strong><em>To:</em></strong></label>
-                        <input type="date" name="to" class="form-control" value="<?= htmlspecialchars($to) ?>">
-                    </div>
+    #layoutSidenav_nav {
+        width: 250px;
+        flex-shrink: 0;
+        transition: margin-left 0.3s ease;
+    }
 
-                    <div class="col-md-3">
-                        <label><strong><em>User</em></strong></label>
-                        <select name="filter_user" class="form-select">
-                            <option value="">All Users</option>
-                            <?php while ($u = $usersResult->fetch_assoc()): ?>
-                                <option value="<?= $u['id'] ?>"
-                                    <?= ($selectedUser == $u['id']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($u['name']) ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
+    #layoutSidenav_content {
+        flex-grow: 1;
+        min-width: 0;
+        transition: margin-left 0.3s ease;
+    }
+</style>
 
-                    <div class="col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="?" class="btn btn-secondary">Reset</a>
-                    </div>
-                </form>
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+            <br>
+            <h4>Login / Logout History (Multiple Users)</h4>
+            <br>
+            <!-- Search form with From/To dates -->
+            <form method="get" class="mb-3 row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label><strong><em>Keyword</em></strong></label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by name, username, or IP"
+                        value="<?= htmlspecialchars($search) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label><strong><em>From:</em></strong></label>
+                    <input type="date" name="from" class="form-control" value="<?= htmlspecialchars($from) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label><strong><em>To:</em></strong></label>
+                    <input type="date" name="to" class="form-control" value="<?= htmlspecialchars($to) ?>">
+                </div>
 
-                <table class="table table-bordered table-striped mt-3">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>FULLNAME</th>
-                            <th>Username</th>
-                            <th>Login Time</th>
-                            <th>Logout Time</th>
-                            <th>IP Address</th>
-                        </tr>
-                    </thead>
+                <div class="col-md-3">
+                    <label><strong><em>User</em></strong></label>
+                    <select name="filter_user" class="form-select">
+                        <option value="">All Users</option>
+                        <?php while ($u = $usersResult->fetch_assoc()): ?>
+                            <option value="<?= $u['id'] ?>" <?= ($selectedUser == $u['id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($u['name']) ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
 
-                    <tbody>
-                        <?php 
-                            $counter = 1; 
-                            while ($row = $result->fetch_assoc()): 
-                            $login_time = date("Y-m-d h:i:s A", strtotime($row['login_time']));
-                            $logout_time = $row['logout_time'] ? date("Y-m-d h:i:s A", strtotime($row['logout_time'])) : '---';
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <a href="?" class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+
+            <table class="table table-bordered table-striped mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>FULLNAME</th>
+                        <th>Username</th>
+                        <th>Login Time</th>
+                        <th>Logout Time</th>
+                        <th>IP Address</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php
+                    $counter = 1;
+                    while ($row = $result->fetch_assoc()):
+                        $login_time = date("Y-m-d h:i:s A", strtotime($row['login_time']));
+                        $logout_time = $row['logout_time'] ? date("Y-m-d h:i:s A", strtotime($row['logout_time'])) : '---';
                         ?>
                         <tr>
                             <td><?= $offset + $counter ?></td>
@@ -246,33 +253,47 @@
                             <td><?= $logout_time ?></td>
                             <td><?= htmlspecialchars($row['ip_address']) ?></td>
                         </tr>
-                        <?php 
-                            $counter++;
-                            endwhile; 
-                        ?>
-                    </tbody>
-                </table>
-                <br>
-                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+                        <?php
+                        $counter++;
+                    endwhile;
+                    ?>
+                </tbody>
+            </table>
+            <br>
+            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
 
-                <!-- Pagination links -->
+                <?php
+                $pagesToShow = 5; // number of pages per block
+                $currentBlock = ceil($page / $pagesToShow);
+                $startPage = ($currentBlock - 1) * $pagesToShow + 1;
+                $endPage = min($startPage + $pagesToShow - 1, $totalPages);
+                ?>
+
                 <nav>
                     <ul class="pagination mb-0">
+                        <!-- Previous -->
                         <?php if ($page > 1): ?>
                             <li class="page-item">
-                                <a class="page-link" href="?page=<?= $page-1 ?>&limit=<?= $perPage ?>&search=<?= urlencode($search) ?>&from=<?= $from ?>&to=<?= $to ?>&filter_user=<?= $selectedUser ?>">Previous</a>
+                                <a class="page-link"
+                                    href="?page=<?= $page - 1 ?>&limit=<?= $perPage ?>&search=<?= urlencode($search) ?>&from=<?= $from ?>&to=<?= $to ?>&filter_user=<?= $selectedUser ?>">Previous</a>
                             </li>
                         <?php endif; ?>
 
-                        <?php for ($i=1; $i <= $totalPages; $i++): ?>
-                            <li class="page-item <?= ($i==$page) ? 'active' : '' ?>">
-                                <a class="page-link" href="?page=<?= $i ?>&limit=<?= $perPage ?>&search=<?= urlencode($search) ?>&from=<?= $from ?>&to=<?= $to ?>&filter_user=<?= $selectedUser ?>"><?= $i ?></a>
+                        <!-- Page Numbers -->
+                        <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                            <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                <a class="page-link"
+                                    href="?page=<?= $i ?>&limit=<?= $perPage ?>&search=<?= urlencode($search) ?>&from=<?= $from ?>&to=<?= $to ?>&filter_user=<?= $selectedUser ?>">
+                                    <?= $i ?>
+                                </a>
                             </li>
                         <?php endfor; ?>
 
+                        <!-- Next -->
                         <?php if ($page < $totalPages): ?>
                             <li class="page-item">
-                                <a class="page-link" href="?page=<?= $page+1 ?>&limit=<?= $perPage ?>&search=<?= urlencode($search) ?>&from=<?= $from ?>&to=<?= $to ?>&filter_user=<?= $selectedUser ?>">Next</a>
+                                <a class="page-link"
+                                    href="?page=<?= $page + 1 ?>&limit=<?= $perPage ?>&search=<?= urlencode($search) ?>&from=<?= $from ?>&to=<?= $to ?>&filter_user=<?= $selectedUser ?>">Next</a>
                             </li>
                         <?php endif; ?>
                     </ul>
@@ -305,12 +326,12 @@
                     <input type="hidden" name="page" value="1">
                     <label class="me-2">Show</label>
                     <select name="limit" class="form-select w-auto" onchange="this.form.submit()">
-                        <option value="5" <?= ($perPage==5)?'selected':'' ?>>5</option>
-                        <option value="10" <?= ($perPage==10)?'selected':'' ?>>10</option>
-                        <option value="25" <?= ($perPage==25)?'selected':'' ?>>25</option>
-                        <option value="50" <?= ($perPage==50)?'selected':'' ?>>50</option>
-                        <option value="100" <?= ($perPage==100)?'selected':'' ?>>100</option>
-                        <option value="all" <?= ($perPage==='all')?'selected':'' ?>>Show All</option>
+                        <option value="5" <?= ($perPage == 5) ? 'selected' : '' ?>>5</option>
+                        <option value="10" <?= ($perPage == 10) ? 'selected' : '' ?>>10</option>
+                        <option value="25" <?= ($perPage == 25) ? 'selected' : '' ?>>25</option>
+                        <option value="50" <?= ($perPage == 50) ? 'selected' : '' ?>>50</option>
+                        <option value="100" <?= ($perPage == 100) ? 'selected' : '' ?>>100</option>
+                        <option value="all" <?= ($perPage === 'all') ? 'selected' : '' ?>>Show All</option>
                     </select>
                     <label class="ms-2">entries</label>
                 </form>
@@ -318,7 +339,8 @@
                 <!-- Export Dropdown -->
                 <form method="get" action="EXPORT_LOG_HISTORY-MULTIPLE_USER.php" class="d-inline">
                     <label>Export:
-                        <select id="exportSelect" class="form-select d-inline-block w-auto" onchange="if(this.value) window.location.href=this.value;">
+                        <select id="exportSelect" class="form-select d-inline-block w-auto"
+                            onchange="if(this.value) window.location.href=this.value;">
                             <option value="">-- Select --</option>
                             <option value="EXPORT_LOG_HISTORY-MULTIPLE_USER.php?type=csv">CSV</option>
                             <option value="EXPORT_LOG_HISTORY-MULTIPLE_USER.php?type=excel">Excel</option>
@@ -326,21 +348,21 @@
                         </select>
                     </label>
                 </form>
-            </div>    
-        </main>
-        <?php include __DIR__ . '/layout/FOOTER.php'; ?> 
-    </div>
+            </div>
+    </main>
+    <?php include __DIR__ . '/layout/FOOTER.php'; ?>
+</div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const body = document.body;
-            const sidebarToggle = document.querySelector("#sidebarToggle");
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const body = document.body;
+        const sidebarToggle = document.querySelector("#sidebarToggle");
 
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    body.classList.toggle("sb-sidenav-toggled");
-                });
-            }
-        });
-    </script>
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener("click", function (e) {
+                e.preventDefault();
+                body.classList.toggle("sb-sidenav-toggled");
+            });
+        }
+    });
+</script>

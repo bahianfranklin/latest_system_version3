@@ -19,10 +19,12 @@ if (!$settings) {
     $settings = $q->fetch_assoc();
 }
 
-$SYSTEM_TITLE   = $settings['system_title'];
-$SYSTEM_FOOTER  = $settings['system_footer'];
-$SYSTEM_LOGO    = $settings['system_logo'];
-$COMPANY_NAME   = $settings['company_name'];
+$SYSTEM_TITLE     = $settings['system_title'] ?? '';
+$SYSTEM_FOOTER    = $settings['system_footer'] ?? '';
+$SYSTEM_LOGO      = $settings['system_logo'] ?? '';
+$COMPANY_NAME     = $settings['company_name'] ?? '';
+$ADDRESS          = $settings['address'] ?? '';
+$TELEPHONE_NUMBER = $settings['telephone_number'] ?? '';
 
 /* 2. Update settings when form is submitted */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -39,16 +41,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         SET system_title = ?, 
             company_name = ?, 
             system_footer = ?, 
-            system_logo = ?
+            system_logo = ?,
+            address = ?,
+            telephone_number = ?
         WHERE id = 1
     ");
 
     $stmt->bind_param(
-        "ssss",
+        "ssssss",
         $_POST['system_title'],
         $_POST['company_name'],
         $_POST['system_footer'],
-        $logo_name
+        $logo_name,
+        $_POST['address'],
+        $_POST['telephone_number']
     );
 
     $stmt->execute();
@@ -81,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <div class="mb-3">
                             <label class="form-label">System Title</label>
-                            <input type="text" name="system_title" class="form-control" 
-                                   value="<?= htmlspecialchars($SYSTEM_TITLE) ?>" required>
+                            <input type="text" name="system_title" class="form-control"
+                                value="<?= htmlspecialchars($SYSTEM_TITLE) ?>" required>
                         </div>
 
                         <div class="mb-3">
@@ -92,8 +98,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label">Company Address</label>
+                            <textarea name="address" class="form-control"
+                                rows="3"><?= htmlspecialchars($ADDRESS) ?></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Telephone Number</label>
+                            <input type="text" name="telephone_number" class="form-control"
+                                value="<?= htmlspecialchars($TELEPHONE_NUMBER) ?>">
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">System Footer</label>
-                            <textarea name="system_footer" class="form-control" rows="3" required><?= htmlspecialchars($SYSTEM_FOOTER) ?></textarea>
+                            <textarea name="system_footer" class="form-control" rows="3"
+                                required><?= htmlspecialchars($SYSTEM_FOOTER) ?></textarea>
                         </div>
 
                         <div class="mb-3">
@@ -104,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php if (!empty($SYSTEM_LOGO)): ?>
                             <div class="mb-3">
                                 <label>Current Logo:</label><br>
-                                <img src="uploads/logos/<?= htmlspecialchars($SYSTEM_LOGO) ?>" height="80" class="img-thumbnail">
+                                <img src="uploads/logos/<?= htmlspecialchars($SYSTEM_LOGO) ?>" height="80"
+                                    class="img-thumbnail">
                             </div>
                         <?php endif; ?>
 
@@ -117,4 +137,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php include __DIR__ . '/layout/FOOTER.php'; ?>
     </main>
 </div>
-

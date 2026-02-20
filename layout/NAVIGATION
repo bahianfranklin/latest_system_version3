@@ -66,6 +66,7 @@ $hr_pages = [
     'HR_TARDINESS_REPORT.PHP',
     'SSS_CONTRIBUTION.PHP',
     'PAG-IBIG_CONTRIBUTION.PHP',
+    'PHILHEALTH_CONTRIBUTION.PHP',
     'APPROVER_201_FILE.PHP'
 ];
 $hr_active = in_array($current_page, $hr_pages);

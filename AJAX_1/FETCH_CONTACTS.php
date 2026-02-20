@@ -43,32 +43,47 @@ if ($perPage === "all") { // Show all records
 <table class="table table-bordered table-hover align-middle">
     <thead class="table-dark">
         <tr>
-            <td><?= $i++ ?></td>
-            <td class="col-1"><?= htmlspecialchars($row['fullname']) ?></td>
-            <td class="col-2"><?= htmlspecialchars($row['address']) ?></td>
-            <td class="col-3"><?= htmlspecialchars($row['contact_no']) ?></td>
-            <td class="col-4">Actions</td>
+            <th style="width:5%">#</th>
+            <th class="col-1" style="width:25%">Full Name</th>
+            <th class="col-2" style="width:30%">Address</th>
+            <th class="col-3" style="width:20%">Contact No</th>
+            <th class="col-4" style="width:20%">Actions</th>
         </tr>
     </thead>
+
     <tbody>
         <?php if (!empty($currentRecords)): ?>
             <?php $i = $offset + 1; ?>
             <?php foreach ($currentRecords as $row): ?>
                 <tr>
-                    <td><?= $i++ ?></td>
-                    <td><?= htmlspecialchars($row['fullname']) ?></td>
-                    <td><?= htmlspecialchars($row['address']) ?></td>
-                    <td><?= htmlspecialchars($row['contact_no']) ?></td>
                     <td>
-                        <button class="btn btn-primary btn-sm editBtn" data-id="<?= $row['id'] ?>"
-                            data-fullname="<?= htmlspecialchars($row['fullname']) ?>"
-                            data-address="<?= htmlspecialchars($row['address']) ?>"
-                            data-contact="<?= htmlspecialchars($row['contact_no']) ?>" data-bs-toggle="modal"
-                            data-bs-target="#editModal">Edit</button>
+                        <?= $i++ ?>
+                    </td>
 
-                        <button class="btn btn-danger btn-sm deleteBtn" data-id="<?= $row['id'] ?>">Delete</button>
+                    <td class="col-1">
+                        <?= htmlspecialchars($row['fullname']) ?>
+                    </td>
+
+                    <td class="col-2">
+                        <?= htmlspecialchars($row['address']) ?>
+                    </td>
+
+                    <td class="col-3">
+                        <?= htmlspecialchars($row['contact_no']) ?>
+                    </td>
+
+                    <td class="col-4">
+                        <button class="btn btn-primary btn-sm editBtn" data-id="<?= $row['id'] ?>" data-bs-toggle="modal"
+                            data-bs-target="#editModal">
+                            Edit
+                        </button>
+
+                        <button class="btn btn-danger btn-sm deleteBtn" data-id="<?= $row['id'] ?>">
+                            Delete
+                        </button>
                     </td>
                 </tr>
+
             <?php endforeach; ?>
         <?php else: ?>
             <tr>

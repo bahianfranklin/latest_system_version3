@@ -254,13 +254,13 @@ if (!canView('directory')) {
                             <p>
                                 📧 
                                 <span id="email-<?= $row['id'] ?>"><?= htmlspecialchars($row['email']) ?></span>
-                                <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                <button class="btn btn-sm btn-outline-secondary copy-btn_email" 
                                         data-email="<?= htmlspecialchars($row['email']) ?>">
                                     <i class="fa-regular fa-copy"></i>
                                 </button>
                             </p>
                             <script>
-                                document.querySelectorAll('.copy-btn').forEach(button => {
+                                document.querySelectorAll('.copy-btn_email').forEach(button => {
                                     button.addEventListener('click', () => {
                                         const email = button.getAttribute('data-email');
                                         navigator.clipboard.writeText(email).then(() => {
@@ -276,13 +276,13 @@ if (!canView('directory')) {
                                 });
                             </script>
                             <p>📞 <span id="contact-<?= $row['id'] ?>"><?= htmlspecialchars($row['contact']) ?></span>
-                                <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                <button class="btn btn-sm btn-outline-secondary copy-btn_contact" 
                                         data-contact="<?= htmlspecialchars($row['contact']) ?>">
                                     <i class="fa-regular fa-copy"></i>
                                 </button>
                             </p>
                             <script>
-                                document.querySelectorAll('.copy-btn').forEach(button => {
+                                document.querySelectorAll('.copy-btn_contact').forEach(button => {
                                     button.addEventListener('click', () => {
                                         const contact = button.getAttribute('data-contact');
                                         navigator.clipboard.writeText(contact).then(() => {
