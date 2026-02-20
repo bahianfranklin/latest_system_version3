@@ -6,64 +6,64 @@ ini_set('display_errors', 1);
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <title>Contacts CRUD (AJAX)</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <title>Contacts CRUD (AJAX)</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
 
-<body class="p-4">
+    <body class="p-4">
 
-    <div class="container">
-        <h2>Contacts List</h2>
+        <div class="container">
+            <h2>Contacts List</h2>
 
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <input type="text" id="search" class="form-control form-control-sm" placeholder="Search...">
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="dropdown">
-                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        Column Visibility
-                    </button>
-
-                    <div class="dropdown-menu p-3">
-
-                        <div class="form-check">
-                            <input class="form-check-input column-toggle" type="checkbox" value="1" checked>
-                            <label class="form-check-label">Full Name</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class="form-check-input column-toggle" type="checkbox" value="2" checked>
-                            <label class="form-check-label">Address</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class="form-check-input column-toggle" type="checkbox" value="3" checked>
-                            <label class="form-check-label">Contact No</label>
-                        </div>
-
-                        <div class="form-check">
-                            <input class="form-check-input column-toggle" type="checkbox" value="4" checked>
-                            <label class="form-check-label">Actions</label>
-                        </div>
-
-                    </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <input type="text" id="search" class="form-control form-control-sm" placeholder="Search...">
                 </div>
 
+                <div class="col-md-4">
+
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Column Visibility
+                        </button>
+
+                        <div class="dropdown-menu p-3">
+
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="1" checked>
+                                <label class="form-check-label">Full Name</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="2" checked>
+                                <label class="form-check-label">Address</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="3" checked>
+                                <label class="form-check-label">Contact No</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="4" checked>
+                                <label class="form-check-label">Actions</label>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">
+                        Add Contact
+                    </button>
+                </div>
             </div>
 
-            <div class="col-md-4 text-end">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">
-                    Add Contact
-                </button>
-            </div>
-        </div>
-
-        <div id="tableContainer">
+            <div id="tableContainer"></div>
 
             <!-- ADD MODAL -->
             <div class="modal fade" id="addModal">
@@ -78,10 +78,8 @@ ini_set('display_errors', 1);
                             <div class="modal-body">
                                 <input type="text" name="fullname" class="form-control mb-2" placeholder="Full Name"
                                     required>
-                                <input type="text" name="address" class="form-control mb-2" placeholder="Address"
-                                    required>
-                                <input type="text" name="contact_no" class="form-control" placeholder="Contact No"
-                                    required>
+                                <input type="text" name="address" class="form-control mb-2" placeholder="Address" required>
+                                <input type="text" name="contact_no" class="form-control" placeholder="Contact No" required>
                             </div>
 
                             <div class="modal-footer">
@@ -105,8 +103,7 @@ ini_set('display_errors', 1);
                             <div class="modal-body">
                                 <input type="hidden" name="record_id" id="edit_id">
 
-                                <input type="text" name="fullname" id="edit_fullname" class="form-control mb-2"
-                                    required>
+                                <input type="text" name="fullname" id="edit_fullname" class="form-control mb-2" required>
 
                                 <input type="text" name="address" id="edit_address" class="form-control mb-2" required>
 
@@ -120,108 +117,136 @@ ini_set('display_errors', 1);
                     </div>
                 </div>
             </div>
-        </div>
 
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-        <script>
-            $(document).ready(function () {
+            <script>
+                $(document).ready(function () {
 
-                loadTable();
+                    loadTable();
 
-                function loadTable(page = 1) {
-                    $.ajax({
-                        url: "FETCH_CONTACTS.php",
-                        type: "GET",
-                        data: {
-                            page: page,
-                            search: $("#search").val(),
-                            limit: $("#limit").val()
-                        },
-                        success: function (response) {
-                            $("#tableContainer").html(response);
+                    function loadTable(page = 1) {
+                        $.ajax({
+                            url: "FETCH_CONTACTS.php",
+                            type: "GET",
+                            data: {
+                                page: page,
+                                search: $("#search").val(),
+                                limit: $("#limit").val()
+                            },
+                            success: function (response) {
+                                $("#tableContainer").html(response);
+                                applyColumnVisibility(); // reapply after reload
+                            }
+                        });
+                    }
+
+                    // Search
+                    $("#search").keyup(function () {
+                        loadTable();
+                    });
+
+                    // Limit change
+                    $(document).on("change", "#limit", function () {
+                        loadTable();
+                    });
+
+                    // Pagination click
+                    $(document).on("click", ".page-link", function (e) {
+                        e.preventDefault();
+                        let page = $(this).data("page");
+                        loadTable(page);
+                    });
+
+                    // Add
+                    $("#addForm").submit(function (e) {
+                        e.preventDefault();
+                        $.post("CRUD.php?action=add", $(this).serialize(), function (res) {
+                            alert(res);
+                            var addEl = document.getElementById('addModal');
+                            var addModal = bootstrap.Modal.getOrCreateInstance(addEl);
+                            addModal.hide();
+                            loadTable();
+                        });
+                    });
+
+                    // Edit
+                    // $(document).on("click", ".editBtn", function () {
+                    //     $("#edit_id").val($(this).data("id"));
+                    //     $("#edit_fullname").val($(this).data("fullname"));
+                    //     $("#edit_address").val($(this).data("address"));
+                    //     $("#edit_contact").val($(this).data("contact"));
+                    // });
+
+                    $(document).on("click", ".editBtn", function () {
+                        var row = $(this).closest("tr"); // Get the table row
+                        var id = $(this).data("id");
+
+                        // Grab cell values
+                        var fullname = row.find(".col-1").text().trim();
+                        var address = row.find(".col-2").text().trim();
+                        var contact = row.find(".col-3").text().trim();
+
+                        // Set modal fields
+                        $("#edit_id").val(id);
+                        $("#edit_fullname").val(fullname);
+                        $("#edit_address").val(address);
+                        $("#edit_contact").val(contact);
+
+                        // show edit modal via Bootstrap 5 API
+                        var editEl = document.getElementById('editModal');
+                        var editModal = bootstrap.Modal.getOrCreateInstance(editEl);
+                        editModal.show();
+                    });
+
+                    $("#editForm").submit(function (e) {
+                        e.preventDefault();
+                        $.post("CRUD.php?action=edit", $(this).serialize(), function (res) {
+                            alert(res);
+                            var editEl = document.getElementById('editModal');
+                            var editModal = bootstrap.Modal.getOrCreateInstance(editEl);
+                            editModal.hide();
+                            loadTable();
+                        });
+                    });
+
+                    // Delete
+                    $(document).on("click", ".deleteBtn", function () {
+                        if (confirm("Delete this contact?")) {
+                            $.post("CRUD.php?action=delete",
+                                { id: $(this).data("id") },
+                                function (res) {
+                                    alert(res);
+                                    loadTable();
+                                });
                         }
                     });
+
+                    // Column toggle change
+                    $(document).on("change", ".column-toggle", function () {
+                        applyColumnVisibility();
+                    });
+                });
+
+                function applyColumnVisibility() {
+
+                
+                    $(".column-toggle").each(function () {
+
+                        let column = $(this).val();
+
+                        if ($(this).is(":checked")) {
+                            $(".col-" + column).show();
+                        } else {
+                            $(".col-" + column).hide();
+                        }
+
+                    });
+
                 }
 
-                // Search
-                $("#search").keyup(function () {
-                    loadTable();
-                });
-
-                // Limit change
-                $(document).on("change", "#limit", function () {
-                    loadTable();
-                });
-
-                // Pagination click
-                $(document).on("click", ".page-link", function (e) {
-                    e.preventDefault();
-                    let page = $(this).data("page");
-                    loadTable(page);
-                });
-
-                // Add
-                $("#addForm").submit(function (e) {
-                    e.preventDefault();
-                    $.post("CRUD.php?action=add", $(this).serialize(), function (res) {
-                        alert(res);
-                        $("#addModal").modal('hide');
-                        loadTable();
-                    });
-                });
-
-                // Edit
-                $(document).on("click", ".editBtn", function () {
-                    $("#edit_id").val($(this).data("id"));
-                    $("#edit_fullname").val($(this).data("fullname"));
-                    $("#edit_address").val($(this).data("address"));
-                    $("#edit_contact").val($(this).data("contact"));
-                });
-
-                $("#editForm").submit(function (e) {
-                    e.preventDefault();
-                    $.post("CRUD.php?action=edit", $(this).serialize(), function (res) {
-                        alert(res);
-                        $("#editModal").modal('hide');
-                        loadTable();
-                    });
-                });
-
-                // Delete
-                $(document).on("click", ".deleteBtn", function () {
-                    if (confirm("Delete this contact?")) {
-                        $.post("CRUD.php?action=delete",
-                            { id: $(this).data("id") },
-                            function (res) {
-                                alert(res);
-                                loadTable();
-                            });
-                    }
-                });
-
-            });
-
-            function applyColumnVisibility() {
-
-                $(".column-toggle").each(function () {
-
-                    let column = $(this).val();
-
-                    if ($(this).is(":checked")) {
-                        $(".col-" + column).show();
-                    } else {
-                        $(".col-" + column).hide();
-                    }
-
-                });
-
-            }
-
-        </script>
-
-
-</body>
+            </script>
+    </body>
 
 </html>
